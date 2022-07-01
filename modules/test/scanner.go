@@ -72,8 +72,19 @@ func (scanner *Scanner) GetTrigger() string {
 	return scanner.config.Trigger
 }
 
-func (scanner *Scanner) Scan(t zgrab2.ScanTarget) (zgrab2.ScanStatus, interface{}, error) {
+func (s *Scanner) Scan(t zgrab2.ScanTarget) (zgrab2.ScanStatus, interface{}, error) {
 	log.Println("Scanning for aliens on Mars...")
+	var err error
+	// Also OpenUDP for UDP instead of TCP
+	conn, err := t.Open(&s.config.BaseFlags)
+	if err != nil {
+		return zgrab2.TryGetScanStatus(err), nil, err
+	}
+	cn := conn
+	defer func() {
+		cn.Close()
+	}()
+	conn.Write([]byte("Hello, world!\n")) // Run `nc -lvp 1337` on the scanned machine to see greeting
 	return zgrab2.SCAN_SUCCESS, 42, nil
 }
 
