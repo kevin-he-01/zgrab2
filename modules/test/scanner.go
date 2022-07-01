@@ -84,8 +84,16 @@ func (s *Scanner) Scan(t zgrab2.ScanTarget) (zgrab2.ScanStatus, interface{}, err
 	defer func() {
 		cn.Close()
 	}()
-	conn.Write([]byte("Hello, world!\n")) // Run `nc -lvp 1337` on the scanned machine to see greeting
-	return zgrab2.SCAN_SUCCESS, 42, nil
+	conn.Write([]byte("Hello, world! Awaiting response:\n")) // Run `nc -lvp 1337` on the scanned machine to see greeting
+	buf := make([]byte, 100);
+	nread, err := conn.Read(buf); // Get a response
+	if err != nil {
+		return zgrab2.TryGetScanStatus(err), nil, err
+	}
+	buf = buf[:nread]
+	// log.Println("Read", nread, "bytes: ");
+	// log.Println(string(buf))
+	return zgrab2.SCAN_SUCCESS, string(buf), nil
 }
 
 func RegisterModule() {
