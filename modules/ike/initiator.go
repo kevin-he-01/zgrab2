@@ -29,7 +29,7 @@ func NewInitiatorConn(c net.Conn, addr string, config *InitiatorConfig) (*Conn, 
 	conn := &Conn{conn: c}
 
 	if err := conn.initiatorHandshake(&fullConf); err != nil {
-		c.Close()
+		// c.Close() // will be handled outside in `defer` clause
 		return nil, fmt.Errorf("ike: handshake failed: %v", err)
 	}
 
@@ -108,6 +108,9 @@ func (c *Conn) initiatorHandshakeMain(config *InitiatorConfig) (err error) {
 	if err = c.writeMessage(msg); err != nil {
 		return
 	}
+	// zlog.Println("config", config)
+	// zlog.Println("config.ConnLog", config.ConnLog)
+	// zlog.Println("config.ConnLog.InitiatorMainSA", config.ConnLog.InitiatorMainSA)
 	config.ConnLog.InitiatorMainSA = msg.MakeLog()
 
 	var response *ikeMessage

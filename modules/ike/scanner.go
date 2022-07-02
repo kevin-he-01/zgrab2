@@ -1,4 +1,4 @@
-package test
+package ike
 
 import (
 	log "github.com/sirupsen/logrus"
@@ -10,12 +10,21 @@ import (
 type Module struct {
 }
 
+type Flags struct {
+	zgrab2.BaseFlags
+	zgrab2.UDPFlags
+}
+
 type Scanner struct {
 	config *Flags
 }
 
-type Flags struct {
-	zgrab2.BaseFlags
+func RegisterModule() {
+	var mod Module
+	_, err := zgrab2.AddCommand("ike", "IKE", mod.Description(), 500, &mod)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // NewFlags returns the default flags object to be filled in with the
@@ -31,7 +40,7 @@ func (m *Module) NewScanner() zgrab2.Scanner {
 
 // Description returns an overview of this module.
 func (m *Module) Description() string {
-	return "My first trial at writing a ZGrab 2.0 scanner"
+	return "Scanner for IKE and IKEv2 (ISAKMP)"
 }
 
 // Validate flags
@@ -41,12 +50,7 @@ func (f *Flags) Validate(args []string) (err error) {
 
 // Help returns this module's help string.
 func (f *Flags) Help() string {
-	return "Want some help? No way dude!"
-}
-
-// Protocol returns the protocol identifer for the scanner.
-func (s *Scanner) Protocol() string {
-	return "test"
+	return ""
 }
 
 // Init initializes the Scanner instance with the flags from the command
@@ -72,34 +76,24 @@ func (scanner *Scanner) GetTrigger() string {
 	return scanner.config.Trigger
 }
 
-func (s *Scanner) Scan(t zgrab2.ScanTarget) (zgrab2.ScanStatus, interface{}, error) {
-	log.Println("Scanning for aliens on Mars...")
-	var err error
-	// Also OpenUDP for UDP instead of TCP
-	conn, err := t.Open(&s.config.BaseFlags)
-	if err != nil {
-		return zgrab2.TryGetScanStatus(err), nil, err
-	}
-	cn := conn
-	defer func() {
-		cn.Close()
-	}()
-	conn.Write([]byte("Hello, world! Awaiting response:\n")) // Run `nc -lvp 1337` on the scanned machine to see greeting
-	buf := make([]byte, 100);
-	nread, err := conn.Read(buf); // Get a response
-	if err != nil {
-		return zgrab2.TryGetScanStatus(err), nil, err
-	}
-	buf = buf[:nread]
-	// log.Println("Read", nread, "bytes: ");
-	// log.Println(string(buf))
-	return zgrab2.SCAN_SUCCESS, string(buf), nil
+// Protocol returns the protocol identifer for the scanner.
+func (s *Scanner) Protocol() string {
+	return "ike"
 }
 
-func RegisterModule() {
-	var mod Module
-	_, err := zgrab2.AddCommand("test", "A test scanner", mod.Description(), 1337, &mod)
+func (s *Scanner) Scan(t zgrab2.ScanTarget) (zgrab2.ScanStatus, interface{}, error) {
+	// log.Println("IKE scan started...")
+	var err error
+	conn, err := t.OpenUDP(&s.config.BaseFlags, &s.config.UDPFlags)
 	if err != nil {
-		log.Fatal(err)
+		return zgrab2.TryGetScanStatus(err), nil, err
 	}
+	defer conn.Close()
+	config := MakeIKEConfig()
+	config.ConnLog = new(HandshakeLog)
+	_, err = NewInitiatorConn(conn, "", config)
+	if err != nil {
+		return zgrab2.TryGetScanStatus(err), nil, err
+	}
+	return zgrab2.SCAN_SUCCESS, config.ConnLog, nil
 }
