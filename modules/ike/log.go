@@ -54,14 +54,14 @@ func (msg *IkeMessage) MarshalJSON() ([]byte, error) {
 		if pa, ok := p.(*Notify); ok {
 			aux = append(aux, *pa)
 		}
-		/*
-		   if pa, ok := p.(*Certificate); ok {
-		       aux = append(aux, *pa)
-		   }
+		
+		//    if pa, ok := p.(*Certificate); ok {
+		//        aux = append(aux, *pa)
+		//    }
 		   if pa, ok := p.(*CertificateRequest); ok {
 		       aux = append(aux, *pa)
 		   }
-		*/
+		
 	}
 
 	aux2 := struct {
@@ -177,21 +177,21 @@ func (p *payload) MakeLog() Payload {
 		} else {
 			return pa.MakeLog()
 		}
-	/*
-	   case CERTIFICATE_V2:
-	       if pa, ok := p.body.(*payloadCertificate); !ok {
-	           return new(EmptyPayload)
-	       } else {
-	           return pa.MakeLog()
-	       }
+	
+	//    case CERTIFICATE_V2:
+	//        if pa, ok := p.body.(*payloadCertificate); !ok {
+	//            return new(EmptyPayload)
+	//        } else {
+	//            return pa.MakeLog()
+	//        }
 	   case CERTIFICATE_REQUEST_V2:
 	       if pa, ok := p.body.(*payloadCertificateRequest); !ok {
 	           return new(EmptyPayload)
 	       } else {
 	           return pa.MakeLog()
 	       }
-	   case AUTHENTICATION_V2:
-	*/
+	//    case AUTHENTICATION_V2:
+	
 	case NONCE_V2:
 		if pa, ok := p.body.(*payloadNonce); !ok {
 			return new(EmptyPayload)
@@ -215,6 +215,27 @@ func (p *payload) MakeLog() Payload {
 		}
 	}
 	return new(EmptyPayload)
+}
+
+type CertificateRequest struct {
+	Name      string     `json:"type,omitempty"`
+	Raw       []byte     `json:"raw,omitempty"`
+	Encoding  uint8      `json:"encoding,omitempty"` // TODO: make it a descriptive string
+	CertAuth  []byte	 `json:"ca,omitempty"`
+	// Doi       uint32     `json:"doi,omitempty"`
+	// Situation []byte     `json:"situation,omitempty"`
+	// Proposals []Proposal `json:"proposals,omitempty"`
+}
+
+func (p *payloadCertificateRequest) MakeLog() *CertificateRequest {
+	cr := new(CertificateRequest)
+	// cr.Raw = append(cr.Raw, p.marshal()...)
+
+	cr.Name = "certificate_request"
+	cr.Encoding = p.encoding
+	cr.CertAuth = p.certificateAuth
+
+	return cr
 }
 
 type EmptyPayload struct {
