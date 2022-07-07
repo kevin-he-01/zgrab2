@@ -888,17 +888,61 @@ func (c *InitiatorConfig) MakeBASELINE() {
 }
 
 // Extract RSA signature from host
-func (c *InitiatorConfig) MakeRSA_SIGNATURE() {
+func (c *InitiatorConfig) MakeRSA_SIGNATURE(dhGroup uint16) {
+	c.DHGroup = dhGroup
 	if c.Version == VersionIKEv1 {
 		c.Proposals = []Proposal{
 			{ProposalNum: 1, Transforms: []Transform{
-				// AES-CBC-256, SHA2_256, DH_2048, RSA_SIGNATURES
+				// AES-CBC-256, SHA2_256, RSA_SIGNATURES
 				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
 					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
 					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
 					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
 					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
-					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
+				},
+				},
+				// AES-CBC-128, SHA2_256, RSA_SIGNATURES
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
+				},
+				},
+				// 3DES, SHA2_256, RSA_SIGNATURES
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
+				},
+				},
+				// AES-CBC-256, SHA1, RSA_SIGNATURES
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
+				},
+				},
+				// AES-CBC-128, SHA1, RSA_SIGNATURES
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
+				},
+				},
+				// 3DES, SHA1, RSA_SIGNATURES
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
 				},
 				},
 			}},
@@ -1401,8 +1445,9 @@ func (c *InitiatorConfig) SetConfig() error {
 		c.MakeSINGLE_GROUP()
 	// Extract RSA signature from host
 	case "RSA_SIGNATURE":
-		c.DHGroup = DH_2048_V1
-		c.MakeRSA_SIGNATURE()
+		c.MakeRSA_SIGNATURE(DH_2048_V1)
+	case "RSA_SIGNATURE_DH1024":
+		c.MakeRSA_SIGNATURE(DH_1024_V1)
 	// check for subgroup order validation
 	// 1
 	case "1024S160_1":
