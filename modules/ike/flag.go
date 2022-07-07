@@ -92,9 +92,10 @@ func (kList *KexValueList) Get() [][]byte {
 // TODO: fetch flags not from command line but from some ZGrab 2 interface
 func init() {
 	flag.BoolVar(&pkgConfig.Verbose, "ike-verbose", false, "Output additional information about the IKE exchange.")
-	// flag.IntVar(&pkgConfig.Version, "ike-version", 1, "The IKE version to use.")
-	flag.IntVar(&pkgConfig.Version, "ike-version", 2, "The IKE version to use.")
-	flag.StringVar(&pkgConfig.ModeV1, "ike-mode-v1", "main", "Specify \"main\" or \"aggressive\" mode for IKEv1.")
+	flag.IntVar(&pkgConfig.Version, "ike-version", 1, "The IKE version to use.")
+	// flag.IntVar(&pkgConfig.Version, "ike-version", 2, "The IKE version to use.")
+	// flag.StringVar(&pkgConfig.ModeV1, "ike-mode-v1", "main", "Specify \"main\" or \"aggressive\" mode for IKEv1.")
+	flag.StringVar(&pkgConfig.ModeV1, "ike-mode-v1", "aggressive", "Specify \"main\" or \"aggressive\" mode for IKEv1.")
 	flag.IntVar(&pkgConfig.DHGroup, "ike-dh-group", 14, "The Diffie-Hellman group to be sent in the key exchange payload.")
 	flag.Var(&pkgConfig.Proposals, "ike-proposals", "A json-encoded list of proposals for the initiator security association payload. See the build-proposal.py tool.")
 	flag.Var(&pkgConfig.KexValues, "ike-kex-values", "A comma-separated list of hex-encoded public key exchange values for the initiator key exchange payload.")

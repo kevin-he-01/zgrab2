@@ -58,9 +58,12 @@ func (msg *IkeMessage) MarshalJSON() ([]byte, error) {
 		//    if pa, ok := p.(*Certificate); ok {
 		//        aux = append(aux, *pa)
 		//    }
-		   if pa, ok := p.(*CertificateRequest); ok {
-		       aux = append(aux, *pa)
-		   }
+		if pa, ok := p.(*CertificateRequest); ok {
+			aux = append(aux, *pa)
+		}
+		if pa, ok := p.(*Signature); ok {
+			aux = append(aux, *pa)
+		}
 		
 	}
 
@@ -115,22 +118,27 @@ func (p *payload) MakeLog() Payload {
 		} else {
 			return pa.MakeLog()
 		}
-	/*
-	   case CERTIFICATE_V1:
-	       if pa, ok := p.body.(*payloadCertificate); !ok {
-	           return new(EmptyPayload)
-	       } else {
-	           return pa.MakeLog()
-	       }
-	   case CERTIFICATE_REQUEST_V1:
-	       if pa, ok := p.body.(*payloadCertificateRequest); !ok {
-	           return new(EmptyPayload)
-	       } else {
-	           return pa.MakeLog()
-	       }
-	   case HASH_V1:
-	   case SIGNATURE_V1:
-	*/
+	
+	//    case CERTIFICATE_V1:
+	//        if pa, ok := p.body.(*payloadCertificate); !ok {
+	//            return new(EmptyPayload)
+	//        } else {
+	//            return pa.MakeLog()
+	//        }
+	case CERTIFICATE_REQUEST_V1:
+		if pa, ok := p.body.(*payloadCertificateRequest); !ok {
+			return new(EmptyPayload)
+		} else {
+			return pa.MakeLog()
+		}
+	//    case HASH_V1:
+	case SIGNATURE_V1:
+		if pa, ok := p.body.(*payloadSignatureV1); !ok {
+			return new(EmptyPayload)
+		} else {
+			return pa.MakeLog()
+		}
+	
 	case NONCE_V1:
 		if pa, ok := p.body.(*payloadNonce); !ok {
 			return new(EmptyPayload)
@@ -184,12 +192,12 @@ func (p *payload) MakeLog() Payload {
 	//        } else {
 	//            return pa.MakeLog()
 	//        }
-	   case CERTIFICATE_REQUEST_V2:
-	       if pa, ok := p.body.(*payloadCertificateRequest); !ok {
-	           return new(EmptyPayload)
-	       } else {
-	           return pa.MakeLog()
-	       }
+	case CERTIFICATE_REQUEST_V2:
+		if pa, ok := p.body.(*payloadCertificateRequest); !ok {
+			return new(EmptyPayload)
+		} else {
+			return pa.MakeLog()
+		}
 	//    case AUTHENTICATION_V2:
 	
 	case NONCE_V2:
@@ -331,6 +339,20 @@ func (p *payloadKeyExchangeV2) MakeLog() *KeyExchange {
 	ke.KeyExchangeData = append(ke.KeyExchangeData, p.keyExchangeData...)
 	ke.Name = "key_exchange"
 	return ke
+}
+
+type Signature struct {
+	Name            string `json:"type,omitempty"`
+	Raw             []byte `json:"raw,omitempty"`
+	SignatureData   []byte `json:"sig_data,omitempty"`
+}
+
+func (p *payloadSignatureV1) MakeLog() *Signature {
+	sig := new(Signature)
+	//sig.Raw = append(sig.Raw, p.marshal()...)
+	sig.SignatureData = append(sig.SignatureData, p.signatureData...)
+	sig.Name = "signature"
+	return sig
 }
 
 type Nonce struct {

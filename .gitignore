@@ -25,3 +25,6 @@ build/*
 dist/*
 
 .vscode/*
+
+# My own scripts
+mkbin.sh

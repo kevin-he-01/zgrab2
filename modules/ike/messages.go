@@ -273,6 +273,11 @@ func (p *payload) marshal() (x []byte) {
 			x = append(x, pa.marshal()...)
 		}
 	case SIGNATURE_V1:
+		if pa, ok := p.body.(*payloadSignatureV1); !ok {
+			return
+		} else {
+			x = append(x, pa.marshal()...)
+		}
 	case NONCE_V1:
 		if pa, ok := p.body.(*payloadNonce); !ok {
 			return
@@ -416,6 +421,12 @@ func (p *payload) unmarshal(data []byte) bool {
 		}
 	case HASH_V1:
 	case SIGNATURE_V1:
+		pa := new(payloadSignatureV1)
+		if ok := pa.unmarshal(p.raw[IKE_PAYLOAD_HEADER_LEN:]); !ok {
+			return false
+		} else {
+			p.body = pa
+		}
 	case NONCE_V1:
 		pa := new(payloadNonce)
 		if ok := pa.unmarshal(p.raw[IKE_PAYLOAD_HEADER_LEN:]); !ok {
@@ -1102,6 +1113,25 @@ func (p *payloadKeyExchangeV1) marshal() (x []byte) {
 func (p *payloadKeyExchangeV1) unmarshal(data []byte) bool {
 	p.raw = append(p.raw, data...)
 	p.keyExchangeData = append(p.keyExchangeData, data...)
+	return true
+}
+
+type payloadSignatureV1 struct {
+	raw             []byte
+	signatureData   []byte
+}
+
+func (p *payloadSignatureV1) marshal() (x []byte) {
+	if p.raw != nil {
+		return p.raw
+	}
+	x = append(x, p.signatureData...)
+	return
+}
+
+func (p *payloadSignatureV1) unmarshal(data []byte) bool {
+	p.raw = append(p.raw, data...)
+	p.signatureData = append(p.signatureData, data...)
 	return true
 }
 
