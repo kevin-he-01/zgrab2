@@ -24,7 +24,9 @@ func NewInitiator(c *Conn) *Initiator {
 func NewInitiatorConn(c net.Conn, addr string, config *InitiatorConfig) (*Conn, error) {
 	fullConf := *config
 	fullConf.SetDefaults() // set defaults for general Config
-	fullConf.SetConfig()   // set initiator-specific config using pkgConfig options
+	if err := fullConf.SetConfig(); err != nil { // expand built-in configs
+		return nil, fmt.Errorf("ike: bad config: %v", err)
+	}
 
 	conn := &Conn{conn: c}
 
@@ -948,7 +950,7 @@ func (c *InitiatorConfig) MakeRSA_SIGNATURE(dhGroup uint16) {
 			}},
 		}
 	} else {
-		panic("This config does not apply to IKEv2");
+		panic("Cannot use RSA_SIGNATURE with IKEv2");
 	}
 }
 
@@ -1408,16 +1410,12 @@ func (c *InitiatorConfig) MakeSINGLE_GROUP() {
 
 func (c *InitiatorConfig) SetConfig() error {
 	// Sanity check the IKE version.
-	if pkgConfig.Version == 1 {
-		c.Version = VersionIKEv1
-	} else if pkgConfig.Version == 2 {
-		c.Version = VersionIKEv2
-	} else {
-		return fmt.Errorf("ike: invalid version: %s", pkgConfig.Version)
+	if !(c.Version == 1 || c.Version == 2) {
+		return fmt.Errorf("ike: invalid version: %d", c.Version)
 	}
 
 	// V1 and V2 group numbers are the same for the groups that both version support.
-	configString := strings.ToUpper(pkgConfig.BuiltIn)
+	configString := strings.ToUpper(c.BuiltIn)
 	switch configString {
 	case "": // do not use a built-in config
 		if len(c.Proposals) < 1 {
@@ -1553,7 +1551,7 @@ func (c *InitiatorConfig) SetConfig() error {
 	//    c.DHGroup = DH_CURVE25519_V2
 	//    c.MakeSINGLE_GROUP()
 	default:
-		return fmt.Errorf("ike: invalid ike-config: %s", configString)
+		return fmt.Errorf("ike: invalid --ike-builtin value: %s", configString)
 	}
 	// Sanity-check the config
 	if c.DHGroup == 0 {

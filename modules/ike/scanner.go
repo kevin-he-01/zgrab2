@@ -13,6 +13,17 @@ type Module struct {
 type Flags struct {
 	zgrab2.BaseFlags
 	zgrab2.UDPFlags
+
+	// Verbosity flag
+	Verbose bool `long:"ike-verbose" description:"Output additional information about the IKE exchange."`
+	// IKE Version (1 or 2)
+	Version uint16 `long:"ike-version" default:"1" description:"The IKE version to use."`
+	// IKEv1 Mode ("aggressive" or "main")
+	ModeV1 string `long:"ike-mode-v1" default:"aggressive" description:"Specify \"main\" or \"aggressive\" mode for IKEv1."`
+	// Diffie-Hellman group to send in the initiator key exchange message
+	DHGroup uint16 `long:"ike-dh-group" default:"14" description:"The Diffie-Hellman group to be sent in the key exchange payload."`
+	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
+	BuiltIn string `long:"ike-builtin" default:"RSA_SIGNATURE" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
 }
 
 type Scanner struct {
@@ -81,15 +92,27 @@ func (s *Scanner) Protocol() string {
 	return "ike"
 }
 
+func ConfigFromFlags(flags *Flags) *InitiatorConfig {
+	ret := new(InitiatorConfig)
+	ret.Version = flags.Version
+	ret.ModeV1 = flags.ModeV1
+	ret.DHGroup = flags.DHGroup
+	ret.Proposals = []Proposal{} // TODO: support customizing this
+	ret.KexValues = [][]byte{} // TODO: support customizing this
+	ret.BuiltIn = flags.BuiltIn
+	return ret
+}
+
 func (s *Scanner) Scan(t zgrab2.ScanTarget) (zgrab2.ScanStatus, interface{}, error) {
-	// log.Println("IKE scan started...")
 	var err error
 	conn, err := t.OpenUDP(&s.config.BaseFlags, &s.config.UDPFlags)
 	if err != nil {
 		return zgrab2.TryGetScanStatus(err), nil, err
 	}
 	defer conn.Close()
-	config := MakeIKEConfig()
+	// log.Println("Flag", s.config)
+	config := ConfigFromFlags(s.config)
+	// log.Println("IKE config", config)
 	config.ConnLog = new(HandshakeLog)
 	_, err = NewInitiatorConn(conn, "", config)
 	if err != nil {
