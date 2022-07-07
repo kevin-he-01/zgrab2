@@ -705,129 +705,129 @@ func (c *InitiatorConfig) MakeBASELINE() {
 	if c.Version == VersionIKEv1 {
 		c.Proposals = []Proposal{
 			{ProposalNum: 1, Transforms: []Transform{
-				// // AES-CBC-128, SHA1, DH_1024, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
-				// },
-				// },
-				// // AES-CBC-128, SHA1, DH_2048, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
-				// },
-				// },
-				// // AES-CBC-128, SHA1, DH_1024_S160, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_S160_V1)},
-				// },
-				// },
-				// // AES-CBC-128, SHA1, DH_2048_S224, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_S224_V1)},
-				// },
-				// },
-				// // AES-CBC-128, SHA1, DH_2048_S256, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_S256_V1)},
-				// },
-				// },
-				// // AES-CBC-128, SHA1, DH_256_ECP, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_256_ECP_V1)},
-				// },
-				// },
-				// // AES-CBC-256, SHA1, DH_1024
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
-				// },
-				// },
-				// // AES-CBC-256, SHA1,  DH_2048, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
-				// },
-				// },
-				// // AES-CBC-256, SHA1, DH_256_ECP, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_256_ECP_V1)},
-				// },
-				// },
-				// // 1-DES, MD5, DH_1024, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_DES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(MD5_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
-				// },
-				// },
-				// // 3-DES, MD5, DH_1024, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(MD5_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
-				// },
-				// },
-				// // 3-DES, SHA1, DH_1024, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
-				// },
-				// },
+				// AES-CBC-128, SHA1, DH_1024, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
+				},
+				},
+				// AES-CBC-128, SHA1, DH_2048, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
+				},
+				},
+				// AES-CBC-128, SHA1, DH_1024_S160, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_S160_V1)},
+				},
+				},
+				// AES-CBC-128, SHA1, DH_2048_S224, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_S224_V1)},
+				},
+				},
+				// AES-CBC-128, SHA1, DH_2048_S256, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_S256_V1)},
+				},
+				},
+				// AES-CBC-128, SHA1, DH_256_ECP, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_256_ECP_V1)},
+				},
+				},
+				// AES-CBC-256, SHA1, DH_1024
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
+				},
+				},
+				// AES-CBC-256, SHA1,  DH_2048, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
+				},
+				},
+				// AES-CBC-256, SHA1, DH_256_ECP, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_256_ECP_V1)},
+				},
+				},
+				// 1-DES, MD5, DH_1024, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_DES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(MD5_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
+				},
+				},
+				// 3-DES, MD5, DH_1024, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(MD5_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
+				},
+				},
+				// 3-DES, SHA1, DH_1024, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
+				},
+				},
 				// 3-DES, SHA1, DH_1024, RSA_SIGNATURES
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
-				// },
-				// },
-				// // AES-CBC-256, SHA2_256,  DH_2048, PSK
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
-				// },
-				// },
-				// // AES-CBC-256, SHA2_256, DH_2048, RSA_SIGNATURES
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
+				},
+				},
+				// AES-CBC-256, SHA2_256,  DH_2048, PSK
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
+				},
+				},
+				// AES-CBC-256, SHA2_256, DH_2048, RSA_SIGNATURES
 				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
 					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
 					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
@@ -884,6 +884,27 @@ func (c *InitiatorConfig) MakeBASELINE() {
 			},
 			},
 		}
+	}
+}
+
+// Extract RSA signature from host
+func (c *InitiatorConfig) MakeRSA_SIGNATURE() {
+	if c.Version == VersionIKEv1 {
+		c.Proposals = []Proposal{
+			{ProposalNum: 1, Transforms: []Transform{
+				// AES-CBC-256, SHA2_256, DH_2048, RSA_SIGNATURES
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
+				},
+				},
+			}},
+		}
+	} else {
+		panic("This config does not apply to IKEv2");
 	}
 }
 
@@ -1364,7 +1385,7 @@ func (c *InitiatorConfig) SetConfig() error {
 		c.DHGroup = DH_EC2N_GP_185_V1
 		c.MakeOPENBSD()
 	case "BASELINE":
-		c.DHGroup = DH_2048_V1
+		c.DHGroup = DH_1024_V1
 		c.MakeBASELINE()
 	case "FORTIGATE":
 		c.DHGroup = DH_1536_V1
@@ -1378,6 +1399,10 @@ func (c *InitiatorConfig) SetConfig() error {
 	case "2048S256":
 		c.DHGroup = DH_2048_S256_V1
 		c.MakeSINGLE_GROUP()
+	// Extract RSA signature from host
+	case "RSA_SIGNATURE":
+		c.DHGroup = DH_2048_V1
+		c.MakeRSA_SIGNATURE()
 	// check for subgroup order validation
 	// 1
 	case "1024S160_1":
