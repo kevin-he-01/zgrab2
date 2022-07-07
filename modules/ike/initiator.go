@@ -811,13 +811,13 @@ func (c *InitiatorConfig) MakeBASELINE() {
 				// },
 				// },
 				// 3-DES, SHA1, DH_1024, RSA_SIGNATURES
-				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
-					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
-					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
-					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
-				},
-				},
+				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
+				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
+				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
+				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
+				// },
+				// },
 				// // AES-CBC-256, SHA2_256,  DH_2048, PSK
 				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
 				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
@@ -828,14 +828,14 @@ func (c *InitiatorConfig) MakeBASELINE() {
 				// },
 				// },
 				// // AES-CBC-256, SHA2_256, DH_2048, RSA_SIGNATURES
-				// {IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				// 	{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
-				// 	{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-				// 	{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
-				// 	{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				// 	{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
-				// },
-				// },
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
+				},
+				},
 			}},
 		}
 	} else {
@@ -1364,7 +1364,7 @@ func (c *InitiatorConfig) SetConfig() error {
 		c.DHGroup = DH_EC2N_GP_185_V1
 		c.MakeOPENBSD()
 	case "BASELINE":
-		c.DHGroup = DH_1024_V1
+		c.DHGroup = DH_2048_V1
 		c.MakeBASELINE()
 	case "FORTIGATE":
 		c.DHGroup = DH_1536_V1
