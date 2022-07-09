@@ -668,7 +668,7 @@ func (c *Conn) buildPayloadNonce(config *InitiatorConfig) (p *payloadNonce) {
 func (c *Conn) buildPayloadIdentificationV1(config *InitiatorConfig) (p *payloadIdentification) {
 	p = new(payloadIdentification)
 	p.idType = ID_USER_FQDN_V1
-	p.idData = []byte{}
+	p.idData = []byte("research-scan@sysnet.ucsd.edu") // Avoid potentially crashing hosts that expect a valid email address
 	return
 }
 
@@ -700,6 +700,26 @@ func (c *InitiatorConfig) MakeOPENBSD() {
 			},
 			},
 		}
+	}
+}
+
+// Constructing a UDP probe (not expecting a positive response)
+func (c *InitiatorConfig) MakeUDP_PROBE() {
+	c.DHGroup = DH_1024_V1
+	if c.Version == VersionIKEv1 {
+		c.Proposals = []Proposal{
+			{ProposalNum: 1, Transforms:  []Transform{
+			{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+				{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
+				{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(MD5_V1)},
+				{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+				{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
+			},
+			},
+			},},
+		}
+	} else {
+		panic("not implemented")
 	}
 }
 
@@ -890,8 +910,8 @@ func (c *InitiatorConfig) MakeBASELINE() {
 }
 
 // Extract RSA signature from host
-func (c *InitiatorConfig) MakeRSA_SIGNATURE(dhGroup uint16) {
-	c.DHGroup = dhGroup
+func (c *InitiatorConfig) MakeRSA_SIGNATURE() {
+	dhGroup := c.DHGroup
 	if c.Version == VersionIKEv1 {
 		c.Proposals = []Proposal{
 			{ProposalNum: 1, Transforms: []Transform{
@@ -1421,6 +1441,8 @@ func (c *InitiatorConfig) SetConfig() error {
 		if len(c.Proposals) < 1 {
 			zlog.Fatalf("No proposals specified: use ike-builtin or ike-proposals to specify a proposal")
 		}
+	case "UDP_PROBE":
+		c.MakeUDP_PROBE()
 	case "OPENBSD":
 		//c.DHGroup = DH_1024_V1
 		//c.DHGroup = DH_EC2N_GP_155_V1
@@ -1443,9 +1465,7 @@ func (c *InitiatorConfig) SetConfig() error {
 		c.MakeSINGLE_GROUP()
 	// Extract RSA signature from host
 	case "RSA_SIGNATURE":
-		c.MakeRSA_SIGNATURE(DH_2048_V1)
-	case "RSA_SIGNATURE_DH1024":
-		c.MakeRSA_SIGNATURE(DH_1024_V1)
+		c.MakeRSA_SIGNATURE()
 	// check for subgroup order validation
 	// 1
 	case "1024S160_1":

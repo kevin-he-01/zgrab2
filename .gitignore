@@ -3,8 +3,11 @@
 
 # zgrab
 /zgrab2
+/zgrab2-static
 cmd/zgrab2/zgrab2
 cmd/zgrab2/zgrab2.exe
+cmd/zgrab2/zgrab2-static
+cmd/zgrab2/zgrab2-static.exe
 zgrab-output/
 
 # CI dependencies
@@ -28,3 +31,8 @@ dist/*
 
 # My own scripts
 mkbin.sh
+mkrscan.sh
+
+# Binary files
+udp-probe-reference.pcap
+udp-probe.pkt

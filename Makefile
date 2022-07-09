@@ -25,6 +25,11 @@ zgrab2: $(GO_FILES)
 	rm -f zgrab2
 	ln -s cmd/zgrab2/zgrab2$(EXECUTABLE_EXTENSION) zgrab2
 
+zgrab2-static: $(GO_FILES)
+	cd cmd/zgrab2 && env CGO_ENABLED=0 go build -o zgrab2-static$(EXECUTABLE_EXTENSION) && cd ../..
+	rm -f zgrab2-static
+	ln -s cmd/zgrab2/zgrab2-static$(EXECUTABLE_EXTENSION) zgrab2-static
+
 docker-runner: zgrab2
 	make -C docker-runner
 
@@ -44,5 +49,6 @@ container-clean:
 	ln -s cmd/zgrab2/zgrab2$(EXECUTABLE_EXTENSION) zgrab2
 
 clean:
-	cd cmd/zgrab2 && go clean
+	cd cmd/zgrab2 && go clean && rm -f zgrab2-static
 	rm -f zgrab2
+	rm -f zgrab2-static
