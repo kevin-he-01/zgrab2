@@ -1555,7 +1555,7 @@ func (c *InitiatorConfig) SetConfig() error {
 	}
 	// Sanity-check the config
 	if c.DHGroup == 0 {
-		return fmt.Errorf("ike: invalid DH group: %s", c.DHGroup)
+		return fmt.Errorf("ike: invalid DH group: %d", c.DHGroup)
 	}
 	if len(c.Proposals) == 0 {
 		return fmt.Errorf("ike: no proposals specified")
