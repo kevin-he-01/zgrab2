@@ -83,7 +83,9 @@ type InitiatorConfig struct {
 	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
 	BuiltIn string
 
-	Identity string
+	IdentityType uint8
+
+	IdentityData []byte
 }
 
 func (c *Conn) initiatorHandshake(config *InitiatorConfig) (err error) {
@@ -671,8 +673,8 @@ func (c *Conn) buildPayloadIdentificationV1(config *InitiatorConfig) (p *payload
 	// See https://datatracker.ietf.org/doc/html/rfc2407#section-4.6.2.1 for format
 	// See https://datatracker.ietf.org/doc/html/rfc4945 for even more details on identity authentication
 	p = new(payloadIdentification)
-	p.idType = ID_USER_FQDN_V1
-	p.idData = []byte(config.Identity)
+	p.idType = config.IdentityType
+	p.idData = config.IdentityData
 	return
 }
 
