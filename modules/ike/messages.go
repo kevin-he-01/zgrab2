@@ -2,6 +2,7 @@ package ike
 
 import (
 	"errors"
+	"fmt"
 )
 
 type ikeMessage struct {
@@ -109,14 +110,16 @@ func (p *ikeMessage) containsErrorNotification() error {
 			if pa, ok := payload.body.(*payloadNotifyV1); ok {
 				if pa.notifyType >= 1 && pa.notifyType <= 16383 {
 					// Error range
-					return errors.New("received error notification (V1)")
+					return errors.New(fmt.Sprintf("received error notification (V1). Code: %d, Protocol ID: %d, DOI: %d",
+						pa.notifyType, pa.protocolId, pa.doi))
 				}
 			}
 		case NOTIFY_V2:
 			if pa, ok := payload.body.(*payloadNotifyV2); ok {
 				if pa.notifyType >= 1 && pa.notifyType <= 16383 {
 					// Error range
-					return errors.New("received error notification (V2)")
+					return errors.New(fmt.Sprintf("received error notification (V2). Code: %d, Protocol ID: %d",
+						pa.notifyType, pa.protocolId))
 				}
 			}
 		}

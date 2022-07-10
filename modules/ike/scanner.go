@@ -24,6 +24,7 @@ type Flags struct {
 	DHGroup uint16 `long:"ike-dh-group" default:"14" description:"The Diffie-Hellman group to be sent in the key exchange payload."`
 	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
 	BuiltIn string `long:"ike-builtin" default:"RSA_SIGNATURE" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
+	Identity string `long:"ike-identity" default:"research-scan@sysnet.ucsd.edu" description:"An email address corresponding to the identity that is sent"`
 }
 
 type Scanner struct {
@@ -100,6 +101,7 @@ func ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret.Proposals = []Proposal{} // TODO: support customizing this
 	ret.KexValues = [][]byte{} // TODO: support customizing this
 	ret.BuiltIn = flags.BuiltIn
+	ret.Identity = flags.Identity
 	return ret
 }
 

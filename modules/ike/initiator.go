@@ -82,6 +82,8 @@ type InitiatorConfig struct {
 
 	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
 	BuiltIn string
+
+	Identity string
 }
 
 func (c *Conn) initiatorHandshake(config *InitiatorConfig) (err error) {
@@ -666,9 +668,11 @@ func (c *Conn) buildPayloadNonce(config *InitiatorConfig) (p *payloadNonce) {
 }
 
 func (c *Conn) buildPayloadIdentificationV1(config *InitiatorConfig) (p *payloadIdentification) {
+	// See https://datatracker.ietf.org/doc/html/rfc2407#section-4.6.2.1 for format
+	// See https://datatracker.ietf.org/doc/html/rfc4945 for even more details on identity authentication
 	p = new(payloadIdentification)
 	p.idType = ID_USER_FQDN_V1
-	p.idData = []byte("research-scan@sysnet.ucsd.edu") // Avoid potentially crashing hosts that expect a valid email address
+	p.idData = []byte(config.Identity)
 	return
 }
 
@@ -909,68 +913,92 @@ func (c *InitiatorConfig) MakeBASELINE() {
 	}
 }
 
+func (c *InitiatorConfig) GetTransformsFor(authMethod uint16) []Transform {
+	dhGroup := c.DHGroup
+	return []Transform{
+		// AES-CBC-256, SHA2_256, RSA_SIGNATURES
+		{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+			{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
+			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+			{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
+			{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(authMethod)},
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
+		},
+		},
+		// AES-CBC-128, SHA2_256, RSA_SIGNATURES
+		{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+			{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
+			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+			{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
+			{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(authMethod)},
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
+		},
+		},
+		// 3DES, SHA2_256, RSA_SIGNATURES
+		{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
+			{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
+			{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(authMethod)},
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
+		},
+		},
+		// AES-CBC-256, SHA1, RSA_SIGNATURES
+		{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+			{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
+			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+			{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+			{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(authMethod)},
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
+		},
+		},
+		// AES-CBC-128, SHA1, RSA_SIGNATURES
+		{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+			{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
+			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+			{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+			{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(authMethod)},
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
+		},
+		},
+		// 3DES, SHA1, RSA_SIGNATURES
+		{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
+			{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
+			{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(authMethod)},
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
+		},
+		},
+	}
+}
+
 // Extract RSA signature from host
 func (c *InitiatorConfig) MakeRSA_SIGNATURE() {
-	dhGroup := c.DHGroup
 	if c.Version == VersionIKEv1 {
 		c.Proposals = []Proposal{
-			{ProposalNum: 1, Transforms: []Transform{
-				// AES-CBC-256, SHA2_256, RSA_SIGNATURES
-				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
-					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
-					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
-					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
-					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
-				},
-				},
-				// AES-CBC-128, SHA2_256, RSA_SIGNATURES
-				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
-					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
-					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
-					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
-					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
-				},
-				},
-				// 3DES, SHA2_256, RSA_SIGNATURES
-				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
-					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
-					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
-					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
-					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
-				},
-				},
-				// AES-CBC-256, SHA1, RSA_SIGNATURES
-				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
-					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
-					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
-					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
-				},
-				},
-				// AES-CBC-128, SHA1, RSA_SIGNATURES
-				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
-					{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
-					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
-					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
-					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
-				},
-				},
-				// 3DES, SHA1, RSA_SIGNATURES
-				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
-					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
-					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA_V1)},
-					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(RSA_SIGNATURES_V1)},
-					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(dhGroup)},
-				},
-				},
-			}},
+			{ProposalNum: 1, Transforms: c.GetTransformsFor(RSA_SIGNATURES_V1)},
 		}
 	} else {
 		panic("Cannot use RSA_SIGNATURE with IKEv2");
+	}
+}
+
+func (c *InitiatorConfig) MakePSK() {
+	if c.Version == VersionIKEv1 {
+		c.Proposals = []Proposal{
+			{ProposalNum: 1, Transforms: c.GetTransformsFor(PRE_SHARED_KEY_V1)},
+		}
+	} else {
+		panic("Cannot use PSK with IKEv2");
+	}
+}
+
+func (c *InitiatorConfig) MakePSK_OR_RSA() {
+	if c.Version == VersionIKEv1 {
+		c.Proposals = []Proposal{
+			{ProposalNum: 1, Transforms: append(c.GetTransformsFor(PRE_SHARED_KEY_V1), c.GetTransformsFor(RSA_SIGNATURES_V1)...)},
+		}
+	} else {
+		panic("Cannot use PSK or RSA with IKEv2");
 	}
 }
 
@@ -1466,6 +1494,11 @@ func (c *InitiatorConfig) SetConfig() error {
 	// Extract RSA signature from host
 	case "RSA_SIGNATURE":
 		c.MakeRSA_SIGNATURE()
+	// Same as RSA_SIGNATURE except with PSK, used to see what caused those NO_PROPOSAL_CHOSEN messages
+	case "PSK":
+		c.MakePSK()
+	case "PSK_OR_RSA":
+		c.MakePSK_OR_RSA()
 	// check for subgroup order validation
 	// 1
 	case "1024S160_1":
