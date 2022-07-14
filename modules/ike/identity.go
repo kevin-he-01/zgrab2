@@ -88,6 +88,9 @@ func ParseIdentity(identity string) (idType uint8, idData []byte, err error) {
 				return
 			}
 		}
+	case "asn1dn":
+		idType = ID_DER_ASN1_DN_V1
+		idData = ParseASN1DN()
 	default:
 		err = fmt.Errorf(FLAG + ": Unrecognized identity format %s", format)
 	}
