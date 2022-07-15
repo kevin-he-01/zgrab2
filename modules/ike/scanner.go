@@ -21,7 +21,7 @@ type Flags struct {
 	// IKEv1 Mode ("aggressive" or "main")
 	ModeV1 string `long:"ike-mode-v1" default:"aggressive" description:"Specify \"main\" or \"aggressive\" mode for IKEv1."`
 	// Diffie-Hellman group to send in the initiator key exchange message
-	DHGroup uint16 `long:"ike-dh-group" default:"14" description:"The Diffie-Hellman group to be sent in the key exchange payload."`
+	DHGroup uint16 `long:"ike-dh-group" default:"2" description:"The Diffie-Hellman group to be sent in the key exchange payload. 2: DH1024, 14: DH2048"`
 	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
 	BuiltIn string `long:"ike-builtin" default:"RSA_SIGNATURE" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
 	Identity string `long:"ike-identity" default:"email:research-scan@sysnet.ucsd.edu" description:"The identity. See https://docs.strongswan.org/docs/5.9/config/identityParsing.html for parsing rules"`

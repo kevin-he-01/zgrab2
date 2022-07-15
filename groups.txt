@@ -1,0 +1,32 @@
+	//  Group Description (Value 4)
+	//  RESERVED                                0
+	DH_768_V1                 uint16 = 1
+	DH_1024_V1                uint16 = 2
+	DH_EC2N_GP_155_V1         uint16 = 3
+	DH_EC2N_GP_185_V1         uint16 = 4
+	DH_1536_V1                uint16 = 5
+	DH_EC2N_GF_163_V1_RANDOM  uint16 = 6
+	DH_EC2N_GF_163_V1_KOBLITZ uint16 = 7
+	DH_EC2N_GF_283_V1_RANDOM  uint16 = 8
+	DH_EC2N_GF_283_V1_KOBLITZ uint16 = 9
+	DH_EC2N_GF_409_V1_RANDOM  uint16 = 10
+	DH_EC2N_GF_409_V1_KOBLITZ uint16 = 11
+	DH_EC2N_GF_571_V1_RANDOM  uint16 = 12
+	DH_EC2N_GF_571_V1_KOBLITZ uint16 = 13
+	DH_2048_V1                uint16 = 14
+	DH_3072_V1                uint16 = 15
+	DH_4096_V1                uint16 = 16
+	DH_6144_V1                uint16 = 17
+	DH_8192_V1                uint16 = 18
+	DH_256_ECP_V1             uint16 = 19
+	DH_384_ECP_V1             uint16 = 20
+	DH_521_ECP_V1             uint16 = 21
+	DH_1024_S160_V1           uint16 = 22
+	DH_2048_S224_V1           uint16 = 23
+	DH_2048_S256_V1           uint16 = 24
+	DH_192_ECP_V1             uint16 = 25
+	DH_224_ECP_V1             uint16 = 26
+	DH_224_BRAINPOOL_V1       uint16 = 27
+	DH_256_BRAINPOOL_V1       uint16 = 28
+	DH_384_BRAINPOOL_V1       uint16 = 29
+	DH_512_BRAINPOOL_V1       uint16 = 30

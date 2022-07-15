@@ -30,8 +30,11 @@ dist/*
 .vscode/*
 
 # My own scripts
-mkbin.sh
-mkrscan.sh
+/mkbin.sh
+/mkrscan.sh
+
+# My notes
+/success.txt
 
 # Binary files
 udp-probe-reference.pcap
