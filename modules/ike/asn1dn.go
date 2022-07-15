@@ -21,19 +21,21 @@ type AnySET []interface{}
 //////// End ASN.1 DER DN
 
 func OIDFromAttribute(attributeName string) asn1.ObjectIdentifier {
+	// See https://www.ibm.com/docs/en/ibm-mq/7.5?topic=certificates-distinguished-names
+	// for an exhaustive list
 	switch attributeName {
 	case "C": // countryName
 		return []int{2,5,4,6}
-	case "CN": // commonName
-		return []int{2,5,4,3}
-	case "O": // organizationName
-		return []int{2,5,4,10}
+	case "ST": // State or Province Name
+		return []int{2,5,4,8}
 	case "L": // localityName
 		return []int{2,5,4,7}
+	case "O": // organizationName
+		return []int{2,5,4,10}
 	case "OU": // Organizational Unit Name
-		return []int{2, 5, 4, 11}
-	case "ST": // State or Province Name
-		return []int{2, 5, 4, 8}
+		return []int{2,5,4,11}
+	case "CN": // commonName
+		return []int{2,5,4,3}
 	default:
 		return nil
 	}
