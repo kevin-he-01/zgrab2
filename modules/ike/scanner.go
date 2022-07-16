@@ -23,13 +23,13 @@ type Flags struct {
 	// Diffie-Hellman group to send in the initiator key exchange message
 	DHGroup uint16 `long:"ike-dh-group" default:"2" description:"The Diffie-Hellman group to be sent in the key exchange payload. 2: DH1024, 14: DH2048"`
 	// ALL: Encryption algorithms
-	ProposeEncAlgs string `long:"ike-enc" default:"des,idea,blowfish128,rc5,3des,cast" description:"Comma separated list of encryption algorithms to send in payload with builtin ALL"`
+	ProposeEncAlgs string `long:"ike-enc" default:"des,3des,aes128" description:"Comma separated list of encryption algorithms to send in payload with builtin ALL"`
 	// ALL: Hash algorithms
-	ProposeHashAlgs string `long:"ike-hash" default:"md5,sha1,tiger" description:"Comma separated list of hash algorithms to send in payload with builtin ALL"`
+	ProposeHashAlgs string `long:"ike-hash" default:"md5,sha1,sha256" description:"Comma separated list of hash algorithms to send in payload with builtin ALL"`
 	// ALL: Authentication methods
-	ProposeAuthMethods string `long:"ike-auth" default:"psk,dss_sig,rsa_sig,rsa_enc,rev_rsa_enc" description:"Comma separated list of authentication methods to send in payload with builtin ALL"`
+	ProposeAuthMethods string `long:"ike-auth" default:"psk,dss_sig,rsa_sig" description:"Comma separated list of authentication methods to send in payload with builtin ALL"`
 	// ALL: Groups, TODO: make sure we can only propose one group in aggressive mode
-	ProposeGroups string `long:"ike-group" default:"modp768,modp1024,ec2ngp155,ec2ngp185" description:"Comma separated list of groups to send in payload with builtin ALL"`
+	ProposeGroups string `long:"ike-group" default:"modp768,modp1024,modp2048,ec2ngp155,ec2ngp185" description:"Comma separated list of groups to send in payload with builtin ALL"`
 	// NthRound int `long:"ike-nth-round" default:"0" description:"If not 0, send the nth round of proposals (since there can be more than 127 proposals for safety)"`
 	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
 	BuiltIn string `long:"ike-builtin" default:"RSA_SIGNATURE" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
@@ -41,6 +41,8 @@ type Scanner struct {
 
 	idType uint8
 	idData []byte
+
+	transforms []Transform
 }
 
 func RegisterModule() {
@@ -74,6 +76,11 @@ func (f *Flags) Validate(args []string) (err error) {
 		log.Fatal(idErr)
 		return zgrab2.ErrInvalidArguments
 	}
+	_, trErr := ParseTransforms(f)
+	if trErr != nil {
+		log.Fatal(trErr)
+		return zgrab2.ErrInvalidArguments
+	}
 	return nil
 }
 
@@ -92,6 +99,12 @@ func (s *Scanner) Init(flags zgrab2.ScanFlags) error {
 	}
 	s.idType = idType
 	s.idData = idData
+	transforms, err := ParseTransforms(f)
+	if err != nil {
+		panic(err)
+	}
+	s.transforms = transforms
+
 	s.config = f
 	return nil
 }
@@ -126,6 +139,7 @@ func (s *Scanner) ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret.BuiltIn = flags.BuiltIn
 	ret.IdentityType = s.idType
 	ret.IdentityData = s.idData
+	ret.AllTransforms = s.transforms
 	return ret
 }
 

@@ -86,6 +86,9 @@ type InitiatorConfig struct {
 	IdentityType uint8
 
 	IdentityData []byte
+
+	// Used in ALL built-in
+	AllTransforms []Transform
 }
 
 func (c *Conn) initiatorHandshake(config *InitiatorConfig) (err error) {
@@ -973,6 +976,16 @@ func (c *InitiatorConfig) GetTransformsFor(authMethod uint16) []Transform {
 	}
 }
 
+func (c *InitiatorConfig) MakeALL() {
+	if c.Version == VersionIKEv1 {
+		c.Proposals = []Proposal{
+			{ProposalNum: 1, Transforms: c.AllTransforms},
+		}
+	} else {
+		panic("Cannot use ALL with IKEv2");
+	}
+}
+
 // Extract RSA signature from host
 func (c *InitiatorConfig) MakeRSA_SIGNATURE() {
 	if c.Version == VersionIKEv1 {
@@ -1501,6 +1514,9 @@ func (c *InitiatorConfig) SetConfig() error {
 		c.MakePSK()
 	case "PSK_OR_RSA":
 		c.MakePSK_OR_RSA()
+	// ALL transforms supporting some encryption schemes
+	case "ALL":
+		c.MakeALL()
 	// check for subgroup order validation
 	// 1
 	case "1024S160_1":
