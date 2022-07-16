@@ -22,6 +22,15 @@ type Flags struct {
 	ModeV1 string `long:"ike-mode-v1" default:"aggressive" description:"Specify \"main\" or \"aggressive\" mode for IKEv1."`
 	// Diffie-Hellman group to send in the initiator key exchange message
 	DHGroup uint16 `long:"ike-dh-group" default:"2" description:"The Diffie-Hellman group to be sent in the key exchange payload. 2: DH1024, 14: DH2048"`
+	// ALL: Encryption algorithms
+	ProposeEncAlgs string `long:"ike-enc" default:"des,idea,blowfish128,rc5,3des,cast" description:"Comma separated list of encryption algorithms to send in payload with builtin ALL"`
+	// ALL: Hash algorithms
+	ProposeHashAlgs string `long:"ike-hash" default:"md5,sha1,tiger" description:"Comma separated list of hash algorithms to send in payload with builtin ALL"`
+	// ALL: Authentication methods
+	ProposeAuthMethods string `long:"ike-auth" default:"psk,dss_sig,rsa_sig,rsa_enc,rev_rsa_enc" description:"Comma separated list of authentication methods to send in payload with builtin ALL"`
+	// ALL: Groups, TODO: make sure we can only propose one group in aggressive mode
+	ProposeGroups string `long:"ike-group" default:"modp768,modp1024,ec2ngp155,ec2ngp185" description:"Comma separated list of groups to send in payload with builtin ALL"`
+	// NthRound int `long:"ike-nth-round" default:"0" description:"If not 0, send the nth round of proposals (since there can be more than 127 proposals for safety)"`
 	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
 	BuiltIn string `long:"ike-builtin" default:"RSA_SIGNATURE" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
 	Identity string `long:"ike-identity" default:"email:research-scan@sysnet.ucsd.edu" description:"The identity. See https://docs.strongswan.org/docs/5.9/config/identityParsing.html for parsing rules"`
@@ -29,6 +38,9 @@ type Flags struct {
 
 type Scanner struct {
 	config *Flags
+
+	idType uint8
+	idData []byte
 }
 
 func RegisterModule() {
@@ -74,6 +86,12 @@ func (f *Flags) Help() string {
 // line.
 func (s *Scanner) Init(flags zgrab2.ScanFlags) error {
 	f, _ := flags.(*Flags)
+	idType, idData, err := ParseIdentity(f.Identity)
+	if err != nil {
+		panic(err)
+	}
+	s.idType = idType
+	s.idData = idData
 	s.config = f
 	return nil
 }
@@ -98,7 +116,7 @@ func (s *Scanner) Protocol() string {
 	return "ike"
 }
 
-func ConfigFromFlags(flags *Flags) *InitiatorConfig {
+func (s *Scanner) ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret := new(InitiatorConfig)
 	ret.Version = flags.Version
 	ret.ModeV1 = flags.ModeV1
@@ -106,13 +124,8 @@ func ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret.Proposals = []Proposal{} // TODO: support customizing this
 	ret.KexValues = [][]byte{} // TODO: support customizing this
 	ret.BuiltIn = flags.BuiltIn
-	idType, idData, err := ParseIdentity(flags.Identity)
-	if err != nil {
-		panic(err)
-	}
-	ret.IdentityType = idType
-	ret.IdentityData = idData
-	// log.Info("ID type: ", idType, " ID data: ", idData)
+	ret.IdentityType = s.idType
+	ret.IdentityData = s.idData
 	return ret
 }
 
@@ -124,7 +137,7 @@ func (s *Scanner) Scan(t zgrab2.ScanTarget) (zgrab2.ScanStatus, interface{}, err
 	}
 	defer conn.Close()
 	// log.Println("Flag", s.config)
-	config := ConfigFromFlags(s.config)
+	config := s.ConfigFromFlags(s.config)
 	// log.Println("IKE config", config)
 	config.ConnLog = new(HandshakeLog)
 	_, err = NewInitiatorConn(conn, "", config)
