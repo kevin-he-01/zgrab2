@@ -122,7 +122,7 @@ func ParseTransforms(flags *Flags) (transforms []Transform, err error) {
 	for _, authMethod := range strings.Split(flags.ProposeAuthMethods, ",") {
 		authMeth := parseAuthMethods(authMethod)
 		if authMeth == nil {
-			err = fmt.Errorf("--ike-hash: Unknown authentication method %s", authMethod);
+			err = fmt.Errorf("--ike-auth: Unknown authentication method %s", authMethod);
 		}
 		authMethods = append(authMethods, authMeth)
 	}
