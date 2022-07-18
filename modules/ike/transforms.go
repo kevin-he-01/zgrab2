@@ -23,6 +23,26 @@ func parseEncAlg(alg string) []Attribute {
 			{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
 			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
 		}
+	case "aes256":
+		return []Attribute{
+			{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
+			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_AES_CBC_V1)},
+		}
+	case "camellia128":
+		return []Attribute{
+			{Type: KEY_LENGTH_V1, Value: uint16ToBytes(128)},
+			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_CAMELLIA_CBC_V1)},
+		}
+	case "camellia192":
+		return []Attribute{
+			{Type: KEY_LENGTH_V1, Value: uint16ToBytes(192)},
+			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_CAMELLIA_CBC_V1)},
+		}
+	case "camellia256":
+		return []Attribute{
+			{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
+			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_CAMELLIA_CBC_V1)},
+		}
 	// TODO: add camellia support
 	default:
 		return nil
@@ -43,7 +63,14 @@ func parseHashAlg(alg string) []Attribute {
 		return []Attribute{
 			{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_256_V1)},
 		}
-	// TODO: add SHA-3 support
+	case "sha384":
+		return []Attribute{
+			{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_384_V1)},
+		}
+	case "sha512":
+		return []Attribute{
+			{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(SHA2_512_V1)},
+		}
 	default:
 		return nil
 	}
@@ -79,10 +106,6 @@ func parseGroup(group string) []Attribute {
 		return []Attribute{
 			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
 		}
-	case "modp2048":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
-		}
 	case "ec2ngp155":
 		return []Attribute{
 			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_EC2N_GP_155_V1)},
@@ -90,6 +113,42 @@ func parseGroup(group string) []Attribute {
 	case "ec2ngp185":
 		return []Attribute{
 			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_EC2N_GP_185_V1)},
+		}
+	case "modp1536":
+		return []Attribute{
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1536_V1)},
+		}
+	case "modp2048":
+		return []Attribute{
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
+		}
+	case "modp1024s160":
+		return []Attribute{
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_S160_V1)},
+		}
+	case "modp2048s224":
+		return []Attribute{
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_S224_V1)},
+		}
+	case "modp2048s256":
+		return []Attribute{
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_S256_V1)},
+		}
+	case "modp3072":
+		return []Attribute{
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_3072_V1)},
+		}
+	case "modp4096":
+		return []Attribute{
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_4096_V1)},
+		}
+	case "modp6144":
+		return []Attribute{
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_6144_V1)},
+		}
+	case "modp8192":
+		return []Attribute{
+			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_8192_V1)},
 		}
 	default:
 		return nil
