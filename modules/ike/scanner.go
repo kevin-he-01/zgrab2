@@ -143,6 +143,15 @@ func (s *Scanner) ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	return ret
 }
 
+func TryGetScanStatus(err error) zgrab2.ScanStatus {
+	switch err {
+	case ErrNotificationV1, ErrNotificationV2:
+		return zgrab2.SCAN_APPLICATION_ERROR
+	default:
+		return zgrab2.TryGetScanStatus(err)
+	}
+}
+
 func (s *Scanner) Scan(t zgrab2.ScanTarget) (zgrab2.ScanStatus, interface{}, error) {
 	var err error
 	conn, err := t.OpenUDP(&s.config.BaseFlags, &s.config.UDPFlags)
@@ -156,7 +165,7 @@ func (s *Scanner) Scan(t zgrab2.ScanTarget) (zgrab2.ScanStatus, interface{}, err
 	config.ConnLog = new(HandshakeLog)
 	_, err = NewInitiatorConn(conn, "", config)
 	if err != nil {
-		return zgrab2.TryGetScanStatus(err), nil, err
+		return TryGetScanStatus(err), config.ConnLog, err
 	}
 	return zgrab2.SCAN_SUCCESS, config.ConnLog, nil
 }
