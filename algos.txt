@@ -1,0 +1,6 @@
+Default in IKEv1:
+
+des,idea,blowfish128,rc5,3des,cast
+md5,sha1,tiger
+psk,dss_sig,rsa_sig,rsa_enc,rev_rsa_enc
+modp768,modp1024,ec2ngp155,ec2ngp185

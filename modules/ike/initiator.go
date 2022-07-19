@@ -32,7 +32,7 @@ func NewInitiatorConn(c net.Conn, addr string, config *InitiatorConfig) (*Conn, 
 
 	if err := conn.initiatorHandshake(&fullConf); err != nil {
 		// c.Close() // will be handled outside in `defer` clause
-		return nil, fmt.Errorf("ike: handshake failed: %v", err)
+		return nil, err
 	}
 
 	return conn, nil
