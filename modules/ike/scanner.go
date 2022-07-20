@@ -34,6 +34,7 @@ type Flags struct {
 	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
 	BuiltIn string `long:"ike-builtin" default:"RSA_SIGNATURE" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
 	Identity string `long:"ike-identity" default:"email:research-scan@sysnet.ucsd.edu" description:"The identity. See https://docs.strongswan.org/docs/5.9/config/identityParsing.html for parsing rules"`
+	ProbeFile string `long:"ike-probe-file" default:"" description:"Write the initial initiator packet to file and exit. (This is useful for creating zmap probes.)"`
 }
 
 type Scanner struct {
@@ -140,6 +141,7 @@ func (s *Scanner) ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret.IdentityType = s.idType
 	ret.IdentityData = s.idData
 	ret.AllTransforms = s.transforms
+	ret.ProbeFile = flags.ProbeFile
 	return ret
 }
 

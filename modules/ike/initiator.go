@@ -21,14 +21,14 @@ func NewInitiator(c *Conn) *Initiator {
 
 // NewInitiatorConn establishes an IKE connection using c as the underlying
 // transport.
-func NewInitiatorConn(c net.Conn, addr string, config *InitiatorConfig) (*Conn, error) {
+func NewInitiatorConn(c net.Conn, _ string, config *InitiatorConfig) (*Conn, error) {
 	fullConf := *config
 	fullConf.SetDefaults() // set defaults for general Config
 	if err := fullConf.SetConfig(); err != nil { // expand built-in configs
 		return nil, fmt.Errorf("ike: bad config: %v", err)
 	}
 
-	conn := &Conn{conn: c}
+	conn := &Conn{conn: c, probeFile: config.ProbeFile}
 
 	if err := conn.initiatorHandshake(&fullConf); err != nil {
 		// c.Close() // will be handled outside in `defer` clause
@@ -89,6 +89,8 @@ type InitiatorConfig struct {
 
 	// Used in ALL built-in
 	AllTransforms []Transform
+
+	ProbeFile string
 }
 
 func (c *Conn) initiatorHandshake(config *InitiatorConfig) (err error) {

@@ -12,6 +12,9 @@ type Conn struct {
 	// Underlying network connection
 	conn net.Conn
 
+	// Path to the probe file if not empty, otherwise no probe file
+	probeFile string
+
 	// State for handshake
 	initiatorSPI [8]byte
 	responderSPI [8]byte
@@ -19,9 +22,9 @@ type Conn struct {
 
 func (c *Conn) writeMessage(msg *ikeMessage) error {
 	x := msg.marshal()
-	if len(pkgConfig.ProbeFile) > 0 {
-		if err := ioutil.WriteFile(pkgConfig.ProbeFile, x, 0644); err != nil {
-			log.Fatalf("Error writing to probe file \"%s\": %s", pkgConfig.ProbeFile, err.Error())
+	if len(c.probeFile) > 0 {
+		if err := ioutil.WriteFile(c.probeFile, x, 0644); err != nil {
+			log.Fatalf("Error writing to probe file \"%s\": %s", c.probeFile, err.Error())
 		} else {
 			log.Info("Wrote probe file and exiting...")
 			os.Exit(0)
