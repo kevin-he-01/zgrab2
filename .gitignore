@@ -38,4 +38,4 @@ dist/*
 
 # Binary files
 udp-probe-reference.pcap
-udp-probe.pkt
+*.pkt

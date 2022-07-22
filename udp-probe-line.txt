@@ -1,1 +1,6 @@
+# Restricted
 zgrab2 ike --ike-version=1 --ike-mode-v1=main --ike-dh-group=2 --ike-builtin=UDP_PROBE --ike-probe-file=udp-probe.pkt <<< localhost
+# Baseline IKEv1
+zgrab2 ike --ike-version=1 --ike-mode-v1=main --ike-builtin=BASELINE --ike-probe-file=udp-probe-v1-baseline.pkt <<< localhost
+# Comprehensive IKEv2
+zgrab2 ike --ike-version=2 --ike-builtin=ALL --ike-probe-file=udp-probe-v2-all.pkt <<< localhost
