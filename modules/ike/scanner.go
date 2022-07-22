@@ -82,6 +82,14 @@ func (f *Flags) Validate(args []string) (err error) {
 		log.Fatal(trErr)
 		return zgrab2.ErrInvalidArguments
 	}
+	if (f.Version != 1 && f.Version != 2) {
+		log.Fatalf("Bad IKE version %d", f.Version)
+		return zgrab2.ErrInvalidArguments
+	}
+	if (f.ModeV1 != "aggressive" && f.ModeV1 != "main") {
+		log.Fatal("Mode must be either aggressive or main")
+		return zgrab2.ErrInvalidArguments
+	}
 	return nil
 }
 

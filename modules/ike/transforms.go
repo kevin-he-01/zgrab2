@@ -8,6 +8,8 @@ import (
 const MAX_TRANSFORMS = 120
 // (Technically maximum is 255), but to avoid triggering signed 8-bit integer overflow bugs resulting in negative size
 
+const DH_INVALID = 0
+
 func parseEncAlg(alg string) []Attribute {
 	switch alg {
 	case "des":
@@ -95,63 +97,46 @@ func parseAuthMethods(method string) []Attribute {
 	}
 }
 
-
-func parseGroup(group string) []Attribute {
+func groupNum(group string) uint16 {
 	switch group {
 	case "modp768":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_768_V1)},
-		}
+		return DH_768_V1
 	case "modp1024":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
-		}
+		return DH_1024_V1
 	case "ec2ngp155":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_EC2N_GP_155_V1)},
-		}
+		return DH_EC2N_GP_155_V1
 	case "ec2ngp185":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_EC2N_GP_185_V1)},
-		}
+		return DH_EC2N_GP_185_V1
 	case "modp1536":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1536_V1)},
-		}
+		return DH_1536_V1
 	case "modp2048":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_V1)},
-		}
+		return DH_2048_V1
 	case "modp1024s160":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_S160_V1)},
-		}
+		return DH_1024_S160_V1
 	case "modp2048s224":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_S224_V1)},
-		}
+		return DH_2048_S224_V1
 	case "modp2048s256":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_2048_S256_V1)},
-		}
+		return DH_2048_S256_V1
 	case "modp3072":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_3072_V1)},
-		}
+		return DH_3072_V1
 	case "modp4096":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_4096_V1)},
-		}
+		return DH_4096_V1
 	case "modp6144":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_6144_V1)},
-		}
+		return DH_6144_V1
 	case "modp8192":
-		return []Attribute{
-			{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_8192_V1)},
-		}
+		return DH_8192_V1
 	default:
+		return DH_INVALID
+	}
+}
+
+func parseGroup(group string) []Attribute {
+	num := groupNum(group)
+	if num == DH_INVALID {
 		return nil
+	}
+	return []Attribute{
+		{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(num)},
 	}
 }
 
@@ -168,6 +153,7 @@ func ParseTransforms(flags *Flags) (transforms []Transform, err error) {
 		alg := parseEncAlg(encDesc)
 		if alg == nil {
 			err = fmt.Errorf("--ike-enc: Unknown encryption scheme %s", encDesc);
+			return
 		}
 		encs = append(encs, alg)
 	}
@@ -175,6 +161,7 @@ func ParseTransforms(flags *Flags) (transforms []Transform, err error) {
 		hash := parseHashAlg(hashDesc)
 		if hash == nil {
 			err = fmt.Errorf("--ike-hash: Unknown hash %s", hashDesc);
+			return
 		}
 		hashes = append(hashes, hash)
 	}
@@ -182,13 +169,23 @@ func ParseTransforms(flags *Flags) (transforms []Transform, err error) {
 		authMeth := parseAuthMethods(authMethod)
 		if authMeth == nil {
 			err = fmt.Errorf("--ike-auth: Unknown authentication method %s", authMethod);
+			return
 		}
 		authMethods = append(authMethods, authMeth)
 	}
-	for _, groupDesc := range strings.Split(flags.ProposeGroups, ",") {
+	groupStrs := strings.Split(flags.ProposeGroups, ",")
+	if (flags.ModeV1 == "aggressive" && flags.Version == 1) {
+		if (len(groupStrs) != 1) {
+			err = fmt.Errorf("Must propose exactly one group in IKEv1 aggressive mode, got %d", len(groupStrs))
+			return
+		}
+		flags.DHGroup = groupNum(groupStrs[0]) // Override DHGroup
+	}
+	for _, groupDesc := range groupStrs {
 		group := parseGroup(groupDesc)
 		if group == nil {
-			err = fmt.Errorf("--ike-group: Unknown group %s", groupDesc);
+			err = fmt.Errorf("--ike-group: Unknown group %s", groupDesc)
+			return
 		}
 		groups = append(groups, group)
 	}
