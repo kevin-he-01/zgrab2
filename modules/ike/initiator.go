@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	zlog "github.com/sirupsen/logrus" // mock zlog
 	"net"
 	"strings"
 	"time"
+
+	zlog "github.com/sirupsen/logrus" // mock zlog
 )
 
 // Initiator implements an IKE initiator.
@@ -23,7 +24,7 @@ func NewInitiator(c *Conn) *Initiator {
 // transport.
 func NewInitiatorConn(c net.Conn, _ string, config *InitiatorConfig) (*Conn, error) {
 	fullConf := *config
-	fullConf.SetDefaults() // set defaults for general Config
+	fullConf.SetDefaults()                       // set defaults for general Config
 	if err := fullConf.SetConfig(); err != nil { // expand built-in configs
 		return nil, fmt.Errorf("ike: bad config: %v", err)
 	}
@@ -716,15 +717,15 @@ func (c *InitiatorConfig) MakeUDP_PROBE() {
 	c.DHGroup = DH_1024_V1
 	if c.Version == VersionIKEv1 {
 		c.Proposals = []Proposal{
-			{ProposalNum: 1, Transforms:  []Transform{
-			{IdV1: KEY_IKE_V1, Attributes: []Attribute{
-				{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
-				{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(MD5_V1)},
-				{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
-				{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
-			},
-			},
-			},},
+			{ProposalNum: 1, Transforms: []Transform{
+				{IdV1: KEY_IKE_V1, Attributes: []Attribute{
+					{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_3DES_CBC_V1)},
+					{Type: HASH_ALGORITHM_V1, Value: uint16ToBytes(MD5_V1)},
+					{Type: AUTHENTICATION_METHOD_V1, Value: uint16ToBytes(PRE_SHARED_KEY_V1)},
+					{Type: GROUP_DESCRIPTION_V1, Value: uint16ToBytes(DH_1024_V1)},
+				},
+				},
+			}},
 		}
 	} else {
 		panic("not implemented")
@@ -975,13 +976,69 @@ func (c *InitiatorConfig) GetTransformsFor(authMethod uint16) []Transform {
 	}
 }
 
+func concatTransforms(transforms ...[]Transform) []Transform {
+	build := []Transform{}
+	for _, transform := range transforms {
+		build = append(build, transform...)
+	}
+	return build
+}
+
 func (c *InitiatorConfig) MakeALL() {
 	if c.Version == VersionIKEv1 {
 		c.Proposals = []Proposal{
 			{ProposalNum: 1, Transforms: c.AllTransforms},
 		}
 	} else {
-		panic("Cannot use ALL with IKEv2");
+		dhGroupTransforms := []Transform{
+			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_V2},
+			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_V2},
+			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_S160_V2},
+			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S224_V2},
+			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S256_V2},
+			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_ECP_V2},
+			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_BRAINPOOL_V2},
+		}
+		integrityTransforms := []Transform{
+			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_512_256_V2},
+			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_384_192_V2},
+			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_256_128_V2},
+			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA1_96_V2},
+			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_MD5_96_V2},
+		}
+		prfTransforms := []Transform{
+			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_512_V2},
+			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_384_V2},
+			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_256_V2},
+			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA1_V2},
+			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_MD5_V2},
+		}
+		encTransforms := []Transform{
+			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
+			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
+			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
+			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_3DES_V2},
+		}
+		c.Proposals = []Proposal{
+			{ProposalNum: 1, Transforms: concatTransforms(
+				[]Transform{
+					{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_GCM_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
+					{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_GCM_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
+					{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_GCM_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
+				},
+				prfTransforms,
+				[]Transform{
+					{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_NONE_V2},
+				},
+				dhGroupTransforms,
+			)},
+			{ProposalNum: 2, Transforms: concatTransforms(
+				encTransforms,
+				prfTransforms,
+				integrityTransforms,
+				dhGroupTransforms,
+			)},
+		}
 	}
 }
 
@@ -992,7 +1049,7 @@ func (c *InitiatorConfig) MakeRSA_SIGNATURE() {
 			{ProposalNum: 1, Transforms: c.GetTransformsFor(RSA_SIGNATURES_V1)},
 		}
 	} else {
-		panic("Cannot use RSA_SIGNATURE with IKEv2");
+		panic("Cannot use RSA_SIGNATURE with IKEv2")
 	}
 }
 
@@ -1002,7 +1059,7 @@ func (c *InitiatorConfig) MakePSK() {
 			{ProposalNum: 1, Transforms: c.GetTransformsFor(PRE_SHARED_KEY_V1)},
 		}
 	} else {
-		panic("Cannot use PSK with IKEv2");
+		panic("Cannot use PSK with IKEv2")
 	}
 }
 
@@ -1012,7 +1069,7 @@ func (c *InitiatorConfig) MakePSK_OR_RSA() {
 			{ProposalNum: 1, Transforms: append(c.GetTransformsFor(PRE_SHARED_KEY_V1), c.GetTransformsFor(RSA_SIGNATURES_V1)...)},
 		}
 	} else {
-		panic("Cannot use PSK or RSA with IKEv2");
+		panic("Cannot use PSK or RSA with IKEv2")
 	}
 }
 
