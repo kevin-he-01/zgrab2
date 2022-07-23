@@ -424,6 +424,12 @@ func (c *Conn) initiatorHandshakeV2(config *InitiatorConfig) (err error) {
 		// Check if response contains an INVALID_KE_PAYLOAD request. If so, initiate another handshake with the requested group.
 		if dhGroup := response.containsInvalidKEPayload(); dhGroup != 0 {
 			config.DHGroup = dhGroup
+
+			if _, ok := groupKexMap[config.DHGroup]; !ok {
+				err = fmt.Errorf("Unsupported Diffie-Hellman group %d requested on INVALID_KE_PAYLOAD", config.DHGroup)
+				return
+			}
+
 			return c.initiatorHandshakeV2(config)
 		}
 
@@ -644,7 +650,7 @@ func (c *Conn) buildPayloadKeyExchangeV1(config *InitiatorConfig) (p *payloadKey
 	if val, ok := groupKexMap[config.DHGroup]; ok {
 		p.keyExchangeData = append(p.keyExchangeData, val...)
 	} else {
-		zlog.Fatalf("unsupported group: %d", config.DHGroup)
+		zlog.Fatalf("unsupported group: %d. conn: %s", config.DHGroup, c)
 	}
 	return
 }
@@ -660,7 +666,7 @@ func (c *Conn) buildPayloadKeyExchangeV2(config *InitiatorConfig) (p *payloadKey
 	if val, ok := groupKexMap[config.DHGroup]; ok {
 		p.keyExchangeData = append(p.keyExchangeData, val...)
 	} else {
-		zlog.Fatalf("unsupported group: %d", p.dhGroup)
+		zlog.Fatalf("unsupported group: %d. conn: %s", p.dhGroup, c)
 	}
 	return
 }
@@ -990,7 +996,7 @@ func (c *InitiatorConfig) MakeALL() {
 			{ProposalNum: 1, Transforms: c.AllTransforms},
 		}
 	} else {
-		dhGroupTransforms := []Transform{
+		dhGroupTransforms := []Transform{ // TODO: support these by adding entries in common.go -> groupKexMap
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_768_V2},
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_V2},
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1536_V2},
@@ -1002,15 +1008,15 @@ func (c *InitiatorConfig) MakeALL() {
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_S160_V2},
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S224_V2},
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S256_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_192_ECP_V2},
+			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_192_ECP_V2}, // *
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_224_ECP_V2},
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_ECP_V2},
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_384_ECP_V2},
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_521_ECP_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_224_BRAINPOOL_V2},
+			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_224_BRAINPOOL_V2}, // *
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_BRAINPOOL_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_384_BRAINPOOL_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_512_BRAINPOOL_V2},
+			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_384_BRAINPOOL_V2}, // *
+			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_512_BRAINPOOL_V2}, // *
 		}
 		integrityTransforms := []Transform{
 			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_512_256_V2},

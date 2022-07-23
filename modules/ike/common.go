@@ -738,8 +738,8 @@ var groupKexMap = map[uint16][]byte{
 	DH_2048_V1:          KEX_DH_2048,
 	DH_3072_V1:          KEX_DH_3072,
 	DH_4096_V1:          KEX_DH_4096,
-	DH_6144_V1:          KEX_DH_6144,
-	DH_8192_V1:          KEX_DH_8192,
+	// DH_6144_V1:          KEX_DH_6144, // Avoid exceeding UDP payload lengths
+	// DH_8192_V1:          KEX_DH_8192,
 	DH_256_ECP_V1:       KEX_DH_256_ECP,
 	DH_384_ECP_V1:       KEX_DH_384_ECP,
 	DH_521_ECP_V1:       KEX_DH_521_ECP,

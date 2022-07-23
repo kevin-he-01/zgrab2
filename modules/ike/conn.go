@@ -2,6 +2,7 @@ package ike
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -22,6 +23,10 @@ type Conn struct {
 	responderSPI [8]byte
 }
 
+func (c *Conn) String() string {
+	return fmt.Sprintf("%s -> %s", c.conn.LocalAddr().String(), c.conn.RemoteAddr().String())
+}
+
 func (c *Conn) writeMessage(msg *ikeMessage) error {
 	x := msg.marshal()
 	if len(c.probeFile) > 0 {
@@ -34,9 +39,8 @@ func (c *Conn) writeMessage(msg *ikeMessage) error {
 	}
 	if len(x) > MAX_UDP_PAYLOAD_LEN {
 		debug.PrintStack()
-		log.Fatalf("Message exceeds max udp payload length: %s -> %s. Max: %d bytes, Need: %d bytes",
-			c.conn.LocalAddr().String(), c.conn.RemoteAddr().String(),
-			MAX_UDP_PAYLOAD_LEN, len(x),
+		log.Fatalf("Message exceeds max udp payload length: %s. Max: %d bytes, Need: %d bytes",
+			c, MAX_UDP_PAYLOAD_LEN, len(x),
 		)
 	}
 	n, err := c.Write(x)
