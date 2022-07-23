@@ -2,10 +2,12 @@ package ike
 
 import (
 	"errors"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net"
 	"os"
+	"runtime/debug"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Conn struct {
@@ -31,7 +33,11 @@ func (c *Conn) writeMessage(msg *ikeMessage) error {
 		}
 	}
 	if len(x) > MAX_UDP_PAYLOAD_LEN {
-		log.Fatalf("Message exceeds max udp payload length (disable this warning if you don't care)")
+		debug.PrintStack()
+		log.Fatalf("Message exceeds max udp payload length: %s -> %s. Max: %d bytes, Need: %d bytes",
+			c.conn.LocalAddr().String(), c.conn.RemoteAddr().String(),
+			MAX_UDP_PAYLOAD_LEN, len(x),
+		)
 	}
 	n, err := c.Write(x)
 	if err != nil {
