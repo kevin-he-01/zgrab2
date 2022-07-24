@@ -111,12 +111,6 @@ func groupNum(group string) uint16 {
 		return DH_1536_V1
 	case "modp2048":
 		return DH_2048_V1
-	case "modp1024s160":
-		return DH_1024_S160_V1
-	case "modp2048s224":
-		return DH_2048_S224_V1
-	case "modp2048s256":
-		return DH_2048_S256_V1
 	case "modp3072":
 		return DH_3072_V1
 	case "modp4096":
@@ -125,6 +119,30 @@ func groupNum(group string) uint16 {
 		return DH_6144_V1
 	case "modp8192":
 		return DH_8192_V1
+	case "ecp256":
+		return DH_256_ECP_V1
+	case "ecp384":
+		return DH_384_ECP_V1
+	case "ecp521":
+		return DH_521_ECP_V1
+	case "modp1024s160":
+		return DH_1024_S160_V1
+	case "modp2048s224":
+		return DH_2048_S224_V1
+	case "modp2048s256":
+		return DH_2048_S256_V1
+	case "ecp192":
+		return DH_192_ECP_V1
+	case "ecp224":
+		return DH_224_ECP_V1
+	case "ecp224bp":
+		return DH_224_BRAINPOOL_V1
+	case "ecp256bp":
+		return DH_256_BRAINPOOL_V1
+	case "ecp384bp":
+		return DH_384_BRAINPOOL_V1
+	case "ecp512bp":
+		return DH_512_BRAINPOOL_V1
 	default:
 		return DH_INVALID
 	}

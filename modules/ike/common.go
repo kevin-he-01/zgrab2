@@ -414,7 +414,8 @@ const (
 	DH_256_BRAINPOOL_V2 uint16 = 28
 	DH_384_BRAINPOOL_V2 uint16 = 29
 	DH_512_BRAINPOOL_V2 uint16 = 30
-	//  RESERVED TO IANA                    31 - 1023
+	DH_CURVE25519_V2    uint16 = 31
+	//  RESERVED TO IANA                    32 - 1023
 	//  PRIVATE USE                         1024-65535
 
 	// Transform Type 5 - Extended Sequence Numbers Transform IDs
