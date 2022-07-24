@@ -35,7 +35,13 @@ dist/*
 
 # My notes
 /success.txt
+/try-groups.sh
+/create-bytes.py
+/result.txt
+/result-summary.txt
 
 # Binary files
 udp-probe-reference.pcap
 *.pkt
+
+*.swp
