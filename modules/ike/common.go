@@ -732,6 +732,33 @@ var (
 	KEX_DH_EC2N_GP_185 = []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0d}
 )
 
+var GroupNameMap = map[string]uint16{
+	"modp768": DH_768_V1,
+	"modp1024": DH_1024_V1,
+	"ec2ngp155": DH_EC2N_GP_155_V1,
+	"ec2ngp185": DH_EC2N_GP_185_V1,
+	"modp1536": DH_1536_V1,
+	"modp2048": DH_2048_V1,
+	"modp3072": DH_3072_V1,
+	"modp4096": DH_4096_V1,
+	"modp6144": DH_6144_V1,
+	"modp8192": DH_8192_V1,
+	"ecp256": DH_256_ECP_V1,
+	"ecp384": DH_384_ECP_V1,
+	"ecp521": DH_521_ECP_V1,
+	"modp1024s160": DH_1024_S160_V1,
+	"modp2048s224": DH_2048_S224_V1,
+	"modp2048s256": DH_2048_S256_V1,
+	"ecp192": DH_192_ECP_V1,
+	"ecp224": DH_224_ECP_V1,
+	"ecp224bp": DH_224_BRAINPOOL_V1,
+	"ecp256bp": DH_256_BRAINPOOL_V1,
+	"ecp384bp": DH_384_BRAINPOOL_V1,
+	"ecp512bp": DH_512_BRAINPOOL_V1,
+	"curve25519": DH_CURVE25519_V2,
+	"x25519": DH_CURVE25519_V2,
+}
+
 var groupKexMap = map[uint16][]byte{
 	DH_768_V1:           KEX_DH_768,
 	DH_1024_V1:          KEX_DH_1024,

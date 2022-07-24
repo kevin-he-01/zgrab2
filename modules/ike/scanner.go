@@ -1,6 +1,11 @@
 package ike
 
 import (
+	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/zmap/zgrab2"
@@ -21,7 +26,7 @@ type Flags struct {
 	// IKEv1 Mode ("aggressive" or "main")
 	ModeV1 string `long:"ike-mode-v1" default:"aggressive" description:"Specify \"main\" or \"aggressive\" mode for IKEv1."`
 	// Diffie-Hellman group to send in the initiator key exchange message
-	DHGroup uint16 `long:"ike-dh-group" default:"2" description:"The Diffie-Hellman group to be sent in the key exchange payload. 2: DH1024, 14: DH2048"`
+	DHGroup string `long:"ike-dh-group" default:"2" description:"The Diffie-Hellman group to be sent in the key exchange payload. 2: DH1024, 14: DH2048"`
 	// ALL: Encryption algorithms
 	ProposeEncAlgs string `long:"ike-enc" default:"des,3des,aes128,aes256" description:"Comma separated list of encryption algorithms to send in payload with builtin ALL"`
 	// ALL: Hash algorithms
@@ -42,6 +47,8 @@ type Scanner struct {
 
 	idType uint8
 	idData []byte
+
+	groupNum uint16
 
 	transforms []Transform
 }
@@ -82,6 +89,11 @@ func (f *Flags) Validate(args []string) (err error) {
 		log.Fatal(trErr)
 		return zgrab2.ErrInvalidArguments
 	}
+	_, grErr := group2Num(f.DHGroup)
+	if grErr != nil {
+		log.Fatal(grErr)
+		return zgrab2.ErrInvalidArguments
+	}
 	if (f.Version != 1 && f.Version != 2) {
 		log.Fatalf("Bad IKE version %d", f.Version)
 		return zgrab2.ErrInvalidArguments
@@ -112,9 +124,26 @@ func (s *Scanner) Init(flags zgrab2.ScanFlags) error {
 	if err != nil {
 		panic(err)
 	}
+	groupNum, err := group2Num(f.DHGroup)
+	if err != nil {
+		panic(err)
+	}
+	s.groupNum = groupNum
 	s.transforms = transforms
 
 	s.config = f
+
+	if f.Verbose {
+		log.Info("CONFIGURATION:")
+		log.Infof("IKE Version: %d", f.Version)
+		if f.Version == 1 {
+			log.Infof("IKEv1 mode: %s", f.ModeV1)
+		}
+		log.Infof("Initial DH Group: %d", s.groupNum)
+		log.Infof("IKE identity: %s", f.Identity)
+		log.Infof("IKE Built-in: %s", f.BuiltIn)
+	}
+
 	return nil
 }
 
@@ -138,11 +167,29 @@ func (s *Scanner) Protocol() string {
 	return "ike"
 }
 
+func group2Num(groupName string) (uint16, error) {
+	i, err := strconv.Atoi(groupName)
+	if err == nil {
+		return uint16(i), nil
+	}
+	groupNum, ok := GroupNameMap[groupName]
+	if !ok {
+		keys := make([]string, 0, len(GroupNameMap))
+		for k := range GroupNameMap {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		validGroups := strings.Join(keys, ",")
+		return 0, fmt.Errorf("Bad --ike-dh-group=%s. Valid values are numbers or one of %s", groupName, validGroups)
+	}
+	return groupNum, nil
+}
+
 func (s *Scanner) ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret := new(InitiatorConfig)
 	ret.Version = flags.Version
 	ret.ModeV1 = flags.ModeV1
-	ret.DHGroup = flags.DHGroup
+	ret.DHGroup = s.groupNum
 	ret.Proposals = []Proposal{} // TODO: support customizing this
 	ret.KexValues = [][]byte{} // TODO: support customizing this
 	ret.BuiltIn = flags.BuiltIn
