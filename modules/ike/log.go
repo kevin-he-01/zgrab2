@@ -64,6 +64,9 @@ func (msg *IkeMessage) MarshalJSON() ([]byte, error) {
 		if pa, ok := p.(*Signature); ok {
 			aux = append(aux, *pa)
 		}
+		if pa, ok := p.(*Hash); ok {
+			aux = append(aux, *pa)
+		}
 		
 	}
 
@@ -131,7 +134,12 @@ func (p *payload) MakeLog() Payload {
 		} else {
 			return pa.MakeLog()
 		}
-	//    case HASH_V1:
+	case HASH_V1:
+		if pa, ok := p.body.(*payloadHashV1); !ok {
+			return new(EmptyPayload)
+		} else {
+			return pa.MakeLog()
+		}
 	case SIGNATURE_V1:
 		if pa, ok := p.body.(*payloadSignatureV1); !ok {
 			return new(EmptyPayload)
@@ -230,9 +238,12 @@ type CertificateRequest struct {
 	Raw       []byte     `json:"raw,omitempty"`
 	Encoding  uint8      `json:"encoding,omitempty"` // TODO: make it a descriptive string
 	CertAuth  []byte	 `json:"ca,omitempty"`
-	// Doi       uint32     `json:"doi,omitempty"`
-	// Situation []byte     `json:"situation,omitempty"`
-	// Proposals []Proposal `json:"proposals,omitempty"`
+}
+
+type Hash struct {
+	Name      string     `json:"type,omitempty"`
+	Raw       []byte     `json:"raw,omitempty"`
+	HashData  []byte     `json:"data,omitempty"`
 }
 
 func (p *payloadCertificateRequest) MakeLog() *CertificateRequest {
@@ -244,6 +255,16 @@ func (p *payloadCertificateRequest) MakeLog() *CertificateRequest {
 	cr.CertAuth = p.certificateAuth
 
 	return cr
+}
+
+func (p *payloadHashV1) MakeLog() *Hash {
+	ha := new(Hash)
+	// ha.Raw = append(ha.Raw, p.marshal()...)
+
+	ha.Name = "hash"
+	ha.HashData = p.hashData
+
+	return ha
 }
 
 type EmptyPayload struct {

@@ -425,6 +425,12 @@ func (p *payload) unmarshal(data []byte) bool {
 			p.body = pa
 		}
 	case HASH_V1:
+		pa := new(payloadHashV1)
+		if ok := pa.unmarshal(p.raw[IKE_PAYLOAD_HEADER_LEN:]); !ok {
+			return false
+		} else {
+			p.body = pa
+		}
 	case SIGNATURE_V1:
 		pa := new(payloadSignatureV1)
 		if ok := pa.unmarshal(p.raw[IKE_PAYLOAD_HEADER_LEN:]); !ok {
