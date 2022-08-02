@@ -4,3 +4,8 @@ zgrab2 ike --ike-version=1 --ike-mode-v1=main --ike-dh-group=2 --ike-builtin=UDP
 zgrab2 ike --ike-version=1 --ike-mode-v1=main --ike-builtin=BASELINE --ike-probe-file=udp-probe-v1-baseline.pkt <<< localhost
 # Comprehensive IKEv2
 zgrab2 ike --ike-version=2 --ike-builtin=ALL --ike-probe-file=udp-probe-v2-all.pkt <<< localhost
+
+# IKEv1 ALL PSK in Main mode
+zgrab2 ike --ike-version=1 --ike-mode-v1=main --ike-builtin=ALL --ike-auth=psk --ike-probe-file=udp-probe-v1-psk.pkt <<< localhost
+# IKEv1 ALL RSA in Main mode
+zgrab2 ike --ike-version=1 --ike-mode-v1=main --ike-builtin=ALL --ike-auth=rsa_sig --ike-probe-file=udp-probe-v1-rsa.pkt <<< localhost
