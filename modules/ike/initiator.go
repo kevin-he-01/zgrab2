@@ -88,6 +88,8 @@ type InitiatorConfig struct {
 
 	IdentityData []byte
 
+	NonceData []byte
+
 	// Used in ALL built-in
 	AllTransforms []Transform
 
@@ -673,8 +675,7 @@ func (c *Conn) buildPayloadKeyExchangeV2(config *InitiatorConfig) (p *payloadKey
 
 func (c *Conn) buildPayloadNonce(config *InitiatorConfig) (p *payloadNonce) {
 	p = new(payloadNonce)
-	// 20-byte nonce
-	p.nonceData = append(p.nonceData, []byte("\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13")...)
+	p.nonceData = append(p.nonceData, config.NonceData...)
 	return
 }
 

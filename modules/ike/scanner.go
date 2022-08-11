@@ -37,6 +37,7 @@ type Flags struct {
 	ProposeGroups string `long:"ike-group" default:"modp768,modp1024,modp1536,modp2048" description:"Comma separated list of groups to send in payload with builtin ALL"`
 	// NthRound int `long:"ike-nth-round" default:"0" description:"If not 0, send the nth round of proposals (since there can be more than 127 proposals for safety)"`
 	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
+	Nonce string `long:"ike-nonce" default:"000102030405060708090a0b0c0d0e0f10111213" description:"Initiator nonce value to send in hex"`
 	BuiltIn string `long:"ike-builtin" default:"RSA_SIGNATURE" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
 	Identity string `long:"ike-identity" default:"email:research-scan@sysnet.ucsd.edu" description:"The identity. See https://docs.strongswan.org/docs/5.9/config/identityParsing.html for parsing rules"`
 	ProbeFile string `long:"ike-probe-file" default:"" description:"Write the initial initiator packet to file and exit. (This is useful for creating zmap probes.)"`
@@ -47,10 +48,9 @@ type Scanner struct {
 
 	idType uint8
 	idData []byte
-
 	groupNum uint16
-
 	transforms []Transform
+	nonce []byte
 }
 
 func RegisterModule() {
@@ -94,6 +94,11 @@ func (f *Flags) Validate(args []string) (err error) {
 		log.Fatal(grErr)
 		return zgrab2.ErrInvalidArguments
 	}
+	_, nErr := ParseNonce(f.Nonce)
+	if nErr != nil {
+		log.Fatal(nErr)
+		return zgrab2.ErrInvalidArguments
+	}
 	if (f.Version != 1 && f.Version != 2) {
 		log.Fatalf("Bad IKE version %d", f.Version)
 		return zgrab2.ErrInvalidArguments
@@ -128,8 +133,13 @@ func (s *Scanner) Init(flags zgrab2.ScanFlags) error {
 	if err != nil {
 		panic(err)
 	}
+	nonce, err := ParseNonce(f.Nonce)
+	if err != nil {
+		panic(err)
+	}
 	s.groupNum = groupNum
 	s.transforms = transforms
+	s.nonce = nonce
 
 	s.config = f
 
@@ -142,6 +152,8 @@ func (s *Scanner) Init(flags zgrab2.ScanFlags) error {
 		log.Infof("Initial DH Group: %d", s.groupNum)
 		log.Infof("IKE identity: %s", f.Identity)
 		log.Infof("IKE Built-in: %s", f.BuiltIn)
+		log.Infof("IKE Nonce (hex): %s", f.Nonce)
+		log.Infof("IKE Nonce length: %d bytes", len(f.Nonce) / 2) // 2 hex digit = 1 byte
 	}
 
 	return nil
@@ -197,6 +209,7 @@ func (s *Scanner) ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret.IdentityData = s.idData
 	ret.AllTransforms = s.transforms
 	ret.ProbeFile = flags.ProbeFile
+	ret.NonceData = s.nonce
 	return ret
 }
 
