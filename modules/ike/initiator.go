@@ -469,28 +469,29 @@ func (c *Conn) buildInitiatorSAInit(config *InitiatorConfig) (msg *ikeMessage) {
 	msg.hdr = new(ikeHeader)
 	copy(msg.hdr.initiatorSPI[:], c.initiatorSPI[:])
 	// msg.hdr.responderSPI
-	msg.hdr.nextPayload = SECURITY_ASSOCIATION_V2
+	// msg.hdr.nextPayload = SECURITY_ASSOCIATION_V2
 	msg.hdr.majorVersion = VersionIKEv2
 	msg.hdr.minorVersion = 0
 	msg.hdr.exchangeType = IKE_SA_INIT_V2
 	msg.hdr.flags = 0x08            // flags (bit 3 set)
 	msg.hdr.messageId = 0           // Message ID
-	msg.hdr.length = IKE_HEADER_LEN // header + body
+	// msg.hdr.length = IKE_HEADER_LEN // header + body
 
 	// add payloads
+
 	payload1 := c.buildPayload(config, SECURITY_ASSOCIATION_V2)
-	payload1.nextPayload = KEY_EXCHANGE_V2
-	msg.hdr.length += uint32(payload1.length)
+	// payload1.nextPayload = KEY_EXCHANGE_V2
+	// msg.hdr.length += uint32(payload1.length)
 	msg.payloads = append(msg.payloads, payload1)
 
 	payload2 := c.buildPayload(config, KEY_EXCHANGE_V2)
-	payload2.nextPayload = NONCE_V2
-	msg.hdr.length += uint32(payload2.length)
+	// payload2.nextPayload = NONCE_V2
+	// msg.hdr.length += uint32(payload2.length)
 	msg.payloads = append(msg.payloads, payload2)
 
 	payload3 := c.buildPayload(config, NONCE_V2)
-	payload3.nextPayload = NO_NEXT_PAYLOAD
-	msg.hdr.length += uint32(payload3.length)
+	// payload3.nextPayload = NO_NEXT_PAYLOAD
+	// msg.hdr.length += uint32(payload3.length)
 	msg.payloads = append(msg.payloads, payload3)
 
 	return
