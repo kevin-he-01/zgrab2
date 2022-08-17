@@ -22,11 +22,11 @@ type Flags struct {
 	// Verbosity flag
 	Verbose bool `long:"ike-verbose" description:"Output additional information about the IKE exchange."`
 	// IKE Version (1 or 2)
-	Version uint16 `long:"ike-version" default:"1" description:"The IKE version to use."`
+	Version uint16 `long:"ike-version" default:"2" description:"The IKE version to use."`
 	// IKEv1 Mode ("aggressive" or "main")
 	ModeV1 string `long:"ike-mode-v1" default:"aggressive" description:"Specify \"main\" or \"aggressive\" mode for IKEv1."`
 	// Diffie-Hellman group to send in the initiator key exchange message
-	DHGroup string `long:"ike-dh-group" default:"2" description:"The Diffie-Hellman group to be sent in the key exchange payload. 2: DH1024, 14: DH2048"`
+	DHGroup string `long:"ike-dh-group" default:"14" description:"The Diffie-Hellman group to be sent in the key exchange payload. 2: DH1024, 14: DH2048"`
 	// ALL: Encryption algorithms
 	ProposeEncAlgs string `long:"ike-enc" default:"des,3des,aes128,aes256" description:"Comma separated list of encryption algorithms to send in payload with builtin ALL"`
 	// ALL: Hash algorithms
@@ -38,7 +38,7 @@ type Flags struct {
 	// NthRound int `long:"ike-nth-round" default:"0" description:"If not 0, send the nth round of proposals (since there can be more than 127 proposals for safety)"`
 	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
 	Nonce string `long:"ike-nonce" default:"000102030405060708090a0b0c0d0e0f10111213" description:"Initiator nonce value to send in hex"`
-	BuiltIn string `long:"ike-builtin" default:"RSA_SIGNATURE" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
+	BuiltIn string `long:"ike-builtin" default:"BASELINE" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
 	Identity string `long:"ike-identity" default:"email:research-scan@sysnet.ucsd.edu" description:"The identity. See https://docs.strongswan.org/docs/5.9/config/identityParsing.html for parsing rules"`
 	ProbeFile string `long:"ike-probe-file" default:"" description:"Write the initial initiator packet to file and exit. (This is useful for creating zmap probes.)"`
 }
