@@ -2,6 +2,7 @@ package ike
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
@@ -521,7 +522,20 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 			//err = errors.New("invalid initiator SPI")
 			continue
 		}
-		if !bytes.Equal(c.responderSPI[:], make([]byte, 8)) && !bytes.Equal(c.responderSPI[:], response.hdr.responderSPI[:]) {
+
+		if bytes.Equal(c.responderSPI[:], make([]byte, 8)) {
+			zlog.Infof("First time connection, copying responder SPI %s", hex.EncodeToString(response.hdr.responderSPI[:]))
+			copy(c.responderSPI[:], response.hdr.responderSPI[:])
+			if response.hdr.messageId != MID_IKE_SA_INIT {
+				err = fmt.Errorf("First Message ID must be IKE_SA_INIT (0), but got %d", response.hdr.messageId)
+				return
+			}
+		}
+
+		// zlog.Infof("Initiator SPI: %s", hex.EncodeToString(c.initiatorSPI[:]))
+		// zlog.Infof("Responder SPI: %s", hex.EncodeToString(c.responderSPI[:]))
+
+		if !bytes.Equal(c.responderSPI[:], response.hdr.responderSPI[:]) {
 			config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
 			//err = errors.New("invalid responder SPI")
 			continue

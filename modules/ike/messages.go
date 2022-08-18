@@ -162,7 +162,7 @@ func (p *ikeMessage) getKeyExchangeDataV2() []byte {
 		}
 	}
 	return nil
-} 
+}
 
 // IKEv1 and IKEv2 share the same message header format
 type ikeHeader struct {
