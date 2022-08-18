@@ -15,9 +15,13 @@ type HandshakeLog struct {
 	InitiatorAggressive *IkeMessage `json:"initiator_aggr,omitempty"`
 	ResponderAggressive *IkeMessage `json:"responder_aggr,omitempty"`
 
-	// IKEv2
+	// IKEv2 IKE_SA_INIT
 	InitiatorSAInit *IkeMessage `json:"initiator_ike_sa_init,omitempty"`
 	ResponderSAInit *IkeMessage `json:"responder_ike_sa_init,omitempty"`
+
+	// IKEv2 IKE_AUTH
+	InitiatorAuth *IkeMessage `json:"initiator_ike_auth,omitempty"`
+	ResponderAuth *IkeMessage `json:"responder_ike_auth,omitempty"`
 
 	// All
 	ErrorNotification *IkeMessage   `json:"error_notification,omitempty"`

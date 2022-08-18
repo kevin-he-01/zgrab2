@@ -103,7 +103,13 @@ func (c *Conn) initiatorHandshake(config *InitiatorConfig) (err error) {
 	}
 
 	if config.Version == VersionIKEv2 {
-		return c.initiatorHandshakeV2(config)
+		if config.BuiltIn == "EAP" {
+			zlog.Info("Performing V2 handshake in EAP mode")
+			return c.initiatorHandshakeV2EAP(config)
+		} else {
+			zlog.Info("Performing V2 handshake in regular mode")
+			return c.initiatorHandshakeV2(config)
+		}
 	}
 	if config.Version == VersionIKEv1 {
 		if config.ModeV1 == "main" {
@@ -454,6 +460,69 @@ func (c *Conn) initiatorHandshakeV2(config *InitiatorConfig) (err error) {
 		}
 
 		if response.containsPayload(SECURITY_ASSOCIATION_V2) && response.containsPayload(KEY_EXCHANGE_V2) {
+			config.ConnLog.ResponderSAInit = log
+			continue
+		}
+
+		// unexpected message
+		config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
+	}
+	return
+}
+
+func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
+
+	// Send IKE_SA_INIT
+	msg := c.buildInitiatorSAInit(config)
+	if err = c.writeMessage(msg); err != nil {
+		return
+	}
+	config.ConnLog.InitiatorSAInit = msg.MakeLog()
+
+	var response *ikeMessage
+
+	// Messages can come in any order and be retransmitted, so expect anything
+	for config.ConnLog.ResponderSAInit == nil {
+
+		// Read response
+		response, err = c.readMessage()
+		if err != nil {
+			return
+		}
+		log := response.MakeLog()
+
+		// Check if response contains an INVALID_KE_PAYLOAD request. If so, initiate another handshake with the requested group.
+		if dhGroup := response.containsInvalidKEPayload(); dhGroup != 0 {
+			panic("TODO: this is put on hold for now")
+			// config.DHGroup = dhGroup
+
+			// if _, ok := groupKexMap[config.DHGroup]; !ok {
+			// 	err = fmt.Errorf("Unsupported Diffie-Hellman group %d requested on INVALID_KE_PAYLOAD", config.DHGroup)
+			// 	return
+			// }
+
+			// return c.initiatorHandshakeV2(config)
+		}
+
+		// Check if response contains an error notification and abort. Many implementations have invalid SPIs for this, so put it before the SPI check.
+		if err = response.containsErrorNotification(); err != nil {
+			config.ConnLog.ErrorNotification = response.MakeLog()
+			return
+		}
+
+		// Verify that the SPI is correct. This could occur if we have two simultaneous connections with the host, so don't treat this as an error.
+		if !bytes.Equal(c.initiatorSPI[:], response.hdr.initiatorSPI[:]) {
+			config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
+			//err = errors.New("invalid initiator SPI")
+			continue
+		}
+		if !bytes.Equal(c.responderSPI[:], make([]byte, 8)) && !bytes.Equal(c.responderSPI[:], response.hdr.responderSPI[:]) {
+			config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
+			//err = errors.New("invalid responder SPI")
+			continue
+		}
+
+		if response.hdr.messageId == 0 {
 			config.ConnLog.ResponderSAInit = log
 			continue
 		}
@@ -925,6 +994,41 @@ func (c *InitiatorConfig) MakeBASELINE() {
 		}
 	}
 }
+
+func (c *InitiatorConfig) MakeEAP() {
+	if c.Version == VersionIKEv1 {
+		panic("EAP not supported for IKEv1")
+	} else {
+		// For now, only support AES-CBC-256/SHA1/DH1024
+		c.Proposals = []Proposal{
+			{ProposalNum: 1, Transforms: []Transform{
+				{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
+				// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
+				// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
+				// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_3DES_V2},
+				// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_512_V2},
+				// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_384_V2},
+				// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_256_V2},
+				{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA1_V2},
+				// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_MD5_V2},
+				// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_512_256_V2},
+				// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_384_192_V2},
+				// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_256_128_V2},
+				{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA1_96_V2},
+				// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_MD5_96_V2},
+				{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_V2},
+				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_V2},
+				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_S160_V2},
+				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S224_V2},
+				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S256_V2},
+				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_ECP_V2},
+				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_BRAINPOOL_V2},
+			},
+			},
+		}
+	}
+}
+
 
 func (c *InitiatorConfig) GetTransformsFor(authMethod uint16) []Transform {
 	dhGroup := c.DHGroup
@@ -1593,6 +1697,9 @@ func (c *InitiatorConfig) SetConfig() error {
 	case "BASELINE":
 		c.DHGroup = DH_1024_V1
 		c.MakeBASELINE()
+	case "EAP":
+		c.DHGroup = DH_1024_V1
+		c.MakeEAP()
 	case "FORTIGATE":
 		c.DHGroup = DH_1536_V1
 		c.MakeFORTIGATE()

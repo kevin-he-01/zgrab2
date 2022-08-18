@@ -38,7 +38,7 @@ type Flags struct {
 	// NthRound int `long:"ike-nth-round" default:"0" description:"If not 0, send the nth round of proposals (since there can be more than 127 proposals for safety)"`
 	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
 	Nonce string `long:"ike-nonce" default:"000102030405060708090a0b0c0d0e0f10111213" description:"Initiator nonce value to send in hex"`
-	BuiltIn string `long:"ike-builtin" default:"BASELINE" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
+	BuiltIn string `long:"ike-builtin" default:"EAP" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
 	Identity string `long:"ike-identity" default:"email:research-scan@sysnet.ucsd.edu" description:"The identity. See https://docs.strongswan.org/docs/5.9/config/identityParsing.html for parsing rules"`
 	ProbeFile string `long:"ike-probe-file" default:"" description:"Write the initial initiator packet to file and exit. (This is useful for creating zmap probes.)"`
 }
