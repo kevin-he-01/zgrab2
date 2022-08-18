@@ -11,6 +11,11 @@ import (
 	zlog "github.com/sirupsen/logrus" // mock zlog
 )
 
+const (
+	MID_IKE_SA_INIT = 0
+	MID_IKE_AUTH = 1
+)
+
 // Initiator implements an IKE initiator.
 type Initiator struct {
 	*Conn
@@ -279,7 +284,7 @@ func (c *Conn) buildInitiatorMainSA(config *InitiatorConfig) (msg *ikeMessage) {
 	msg.hdr.minorVersion = 0
 	msg.hdr.exchangeType = IDENTITY_PROTECTION_V1
 	msg.hdr.flags = 0
-	msg.hdr.messageId = 0           // Message ID
+	msg.hdr.messageId = MID_IKE_SA_INIT // Message ID
 	msg.hdr.length = IKE_HEADER_LEN // header + body
 
 	// add payloads
@@ -522,13 +527,24 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 			continue
 		}
 
-		if response.hdr.messageId == 0 {
+		switch response.hdr.messageId {
+		case MID_IKE_SA_INIT:
 			config.ConnLog.ResponderSAInit = log
-			continue
+			kexData := response.getKeyExchangeDataV2()
+			if kexData == nil {
+				err = fmt.Errorf("No key exchange payloads found. Cannot decrypt packets for EAP")
+				return
+			}
+			err = config.computeSharedSecret(kexData)
+			if err != nil {
+				return
+			}
+		case MID_IKE_AUTH:
+			config.ConnLog.ResponderAuth = log
+		default:
+			// unexpected message
+			config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
 		}
-
-		// unexpected message
-		config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
 	}
 	return
 }
@@ -1000,6 +1016,7 @@ func (c *InitiatorConfig) MakeEAP() {
 		panic("EAP not supported for IKEv1")
 	} else {
 		// For now, only support AES-CBC-256/SHA1/DH1024
+		c.ConnLog.Crypto.DHExponential = groupExpMap[c.DHGroup]
 		c.Proposals = []Proposal{
 			{ProposalNum: 1, Transforms: []Transform{
 				{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
@@ -1699,6 +1716,7 @@ func (c *InitiatorConfig) SetConfig() error {
 		c.MakeBASELINE()
 	case "EAP":
 		c.DHGroup = DH_1024_V1
+		c.ConnLog.Crypto = new(CryptoInfo)
 		c.MakeEAP()
 	case "FORTIGATE":
 		c.DHGroup = DH_1536_V1

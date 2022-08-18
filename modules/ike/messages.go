@@ -152,6 +152,18 @@ func (p *ikeMessage) getResponderDHGroup() uint16 {
 	return 0
 }
 
+func (p *ikeMessage) getKeyExchangeDataV2() []byte {
+	for _, payload := range p.payloads {
+		switch payload.payloadType {
+		case KEY_EXCHANGE_V2:
+			if pa, ok := payload.body.(*payloadKeyExchangeV2); ok {
+				return pa.keyExchangeData
+			}
+		}
+	}
+	return nil
+} 
+
 // IKEv1 and IKEv2 share the same message header format
 type ikeHeader struct {
 	raw          []byte

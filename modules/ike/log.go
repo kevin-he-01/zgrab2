@@ -2,7 +2,13 @@ package ike
 
 import (
 	"encoding/json"
+	"math/big"
 )
+
+type CryptoInfo struct {
+	DHExponential *big.Int `json:"dh_exponent,omitempty"`
+	DHSharedSecret []byte `json:"dh_shared_secret,omitempty"`
+}
 
 type HandshakeLog struct {
 	// IKEv1 Main Mode
@@ -26,6 +32,8 @@ type HandshakeLog struct {
 	// All
 	ErrorNotification *IkeMessage   `json:"error_notification,omitempty"`
 	Unexpected        []*IkeMessage `json:"unexpected_messages,omitempty"`
+
+	Crypto *CryptoInfo `json:"crypto,omitempty"`
 }
 
 type IkeMessage struct {
