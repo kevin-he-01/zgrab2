@@ -100,6 +100,11 @@ type InitiatorConfig struct {
 	AllTransforms []Transform
 
 	ProbeFile string
+
+	// Misc connection states
+
+	responderNonce []byte
+	responderKex []byte
 }
 
 func (c *Conn) initiatorHandshake(config *InitiatorConfig) (err error) {
@@ -544,12 +549,11 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 		switch response.hdr.messageId {
 		case MID_IKE_SA_INIT:
 			config.ConnLog.ResponderSAInit = log
-			kexData := response.getKeyExchangeDataV2()
-			if kexData == nil {
-				err = fmt.Errorf("No key exchange payloads found. Cannot decrypt packets for EAP")
+			err = response.setCryptoParamsV2(config)
+			if err != nil {
 				return
 			}
-			err = config.computeSharedSecret(kexData)
+			err = config.computeSharedSecret(config.responderKex)
 			if err != nil {
 				return
 			}

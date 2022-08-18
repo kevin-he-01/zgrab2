@@ -2,6 +2,7 @@ package ike
 
 import (
 	"errors"
+	"fmt"
 )
 
 var (
@@ -152,14 +153,28 @@ func (p *ikeMessage) getResponderDHGroup() uint16 {
 	return 0
 }
 
-func (p *ikeMessage) getKeyExchangeDataV2() []byte {
+func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
+	kexFound := false
+	nonceFound := false
 	for _, payload := range p.payloads {
 		switch payload.payloadType {
 		case KEY_EXCHANGE_V2:
 			if pa, ok := payload.body.(*payloadKeyExchangeV2); ok {
-				return pa.keyExchangeData
+				config.responderKex = pa.keyExchangeData
+				kexFound = true
+			}
+		case NONCE_V2:
+			if pa, ok := payload.body.(*payloadNonce); ok {
+				config.responderNonce = pa.nonceData
+				nonceFound = true
 			}
 		}
+	}
+	if !kexFound {
+		return fmt.Errorf("Key exchange payload not found")
+	}
+	if !nonceFound {
+		return fmt.Errorf("Nonce payload not found")
 	}
 	return nil
 }
