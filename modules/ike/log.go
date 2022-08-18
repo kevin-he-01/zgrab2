@@ -8,6 +8,14 @@ import (
 type CryptoInfo struct {
 	DHExponential *big.Int `json:"dh_exponent,omitempty"`
 	DHSharedSecret []byte `json:"dh_shared_secret,omitempty"`
+	SKEYSEED []byte `json:"skeyseed,omitempty"`
+	SK_d []byte `json:"sk_d,omitempty"`
+	SK_ai []byte `json:"sk_ai,omitempty"`
+	SK_ar []byte `json:"sk_ar,omitempty"`
+	SK_ei []byte `json:"sk_ei,omitempty"`
+	SK_er []byte `json:"sk_er,omitempty"`
+	SK_pi []byte `json:"sk_pi,omitempty"`
+	SK_pr []byte `json:"sk_pr,omitempty"`
 }
 
 type HandshakeLog struct {

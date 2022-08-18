@@ -557,6 +557,7 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 			if err != nil {
 				return
 			}
+			config.computeCryptoKeys(c)
 		case MID_IKE_AUTH:
 			config.ConnLog.ResponderAuth = log
 		default:

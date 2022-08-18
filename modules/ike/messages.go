@@ -154,6 +154,7 @@ func (p *ikeMessage) getResponderDHGroup() uint16 {
 }
 
 func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
+	// TODO: extract the selected cipher suite (HMAC,INTEGRITY,ENCRYPTION) from responder info
 	kexFound := false
 	nonceFound := false
 	for _, payload := range p.payloads {
