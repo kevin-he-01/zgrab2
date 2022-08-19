@@ -3,4 +3,6 @@ Important ones
 - Generate random ESP SPI
 
 Other
-- Support more algorithms 
+- Support more algorithms
+- Processs INVALID_KEY_PAYLOAD appropriately again 
+- Is N(EAP_ONLY_AUTHENTICATION) necessary?

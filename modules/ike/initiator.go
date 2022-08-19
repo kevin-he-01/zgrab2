@@ -119,6 +119,7 @@ type InitiatorConfig struct {
 	integChecksumLength int // Length of checksum in encrypted payload
 	encKeyLength int // Length of key in chosen encryption algorithm
 	encIVLength int // Length of IV in encrypted payload
+	blockSize int // block size (always same as IV length???), allow pre-calculation of payload length
 
 	// Flag to indicate everything is initialized (avoid nil pointer deference)
 	saInitComplete bool
@@ -657,6 +658,8 @@ func (c *Conn) buildInitiatorAuth(config *InitiatorConfig) (msg *ikeMessage) {
 
 	payload4 := c.buildPayload(config, TRAFFIC_SELECTOR_RESPONDER_V2)
 	msg.payloads = append(msg.payloads, payload4)
+
+	msg.encrypt(config)
 
 	return
 }

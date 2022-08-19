@@ -1,6 +1,7 @@
 package ike
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"errors"
 	"fmt"
@@ -17,6 +18,53 @@ type ikeMessage struct {
 	payloads []*payload
 }
 
+// Modify the payload to an encrypted one
+func (p *ikeMessage) encrypt(c *InitiatorConfig) {
+	p.fixNextPayloads()
+	plaintext := p.marshalPayloads(nil)
+
+	encPayload := new(payload)
+	encPayload.payloadType = ENCRYPTED_V2
+	encPayload.nextPayload = p.payloads[0].payloadType
+	
+	body := new(payloadEncrypted)
+	encPayload.body = body
+	body.iv = bytes.Repeat([]byte{0x42}, c.encIVLength) // TODO: generate random IV
+	ctxtLength := c.getCiphertextLength(len(plaintext))
+	// make dummy ciphertext and checksum just for length calculation
+	body.ciphertext = make([]byte, ctxtLength)
+	body.checksum = make([]byte, c.integChecksumLength)
+	
+	p.payloads = []*payload{encPayload}
+	p.raw = nil // Invalidate cache
+	assocData := p.marshal() // Get associated data from marshaling the partial message
+	assocData = assocData[:len(assocData) - (c.encIVLength + ctxtLength + c.integChecksumLength)]
+	p.raw = nil // Invalidate cache
+	
+	body.ciphertext, body.checksum = c.encryptAndDigest(body.iv, assocData, plaintext) // Fill in real ciphertext and checksum
+}
+
+func (p *ikeMessage) fixNextPayloads() {
+	nextPayload := NO_NEXT_PAYLOAD
+	for i := len(p.payloads) - 1; i >= 0; i-- {
+		plType := p.payloads[i].payloadType
+		if plType != ENCRYPTED_V2 && plType != ENCRYPTED_AND_AUTHENTICATED_FRAGMENT_V2 {
+			// RFC specify exception to set next payload to indicate first payload inside encrypted payload
+			// It is the caller's responsibility to set this correctly in this case (also to NONE for all fragments except first)
+			p.payloads[i].nextPayload = nextPayload
+		}
+		nextPayload = plType
+	}
+	p.hdr.nextPayload = nextPayload
+}
+
+func (p *ikeMessage) marshalPayloads(x []byte) []byte {
+	for _, payload := range p.payloads {
+		x = append(x, payload.marshal()...)
+	}
+	return x
+}
+
 func (p *ikeMessage) marshal() (x []byte) {
 	if p.raw != nil {
 		return p.raw
@@ -25,16 +73,9 @@ func (p *ikeMessage) marshal() (x []byte) {
 	x = make([]byte, IKE_HEADER_LEN)
 
 	// set nextPayload fields
-	nextPayload := NO_NEXT_PAYLOAD
-	for i := len(p.payloads) - 1; i >= 0; i-- {
-		p.payloads[i].nextPayload = nextPayload
-		nextPayload = p.payloads[i].payloadType
-	}
-	p.hdr.nextPayload = nextPayload
+	p.fixNextPayloads()
 
-	for _, payload := range p.payloads {
-		x = append(x, payload.marshal()...)
-	}
+	x = p.marshalPayloads(x)
 
 	p.hdr.length = uint32(len(x))
 	copy(x[:IKE_HEADER_LEN], p.hdr.marshal())
@@ -185,6 +226,7 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 	config.integKeyLength = 20
 	config.integChecksumLength = 12 // HMAC_SHA1_96 (notice size truncated to 96 bits or 12 bytes)
 	config.encIVLength = 16
+	config.blockSize = 16
 	config.encKeyLength = 32
 	return nil
 }
@@ -396,6 +438,12 @@ func (p *payload) marshal() (x []byte) {
 		}
 	case TRAFFIC_SELECTOR_INITIATOR_V2, TRAFFIC_SELECTOR_RESPONDER_V2:
 		if sa, ok := p.body.(*payloadTrafficSelector); !ok {
+			return
+		} else {
+			x = append(x, sa.marshal()...)
+		}
+	case ENCRYPTED_V2:
+		if sa, ok := p.body.(*payloadEncrypted); !ok {
 			return
 		} else {
 			x = append(x, sa.marshal()...)
@@ -1449,9 +1497,24 @@ func (p *payloadTrafficSelector) unmarshal(data []byte) bool {
 	return true // no data to extract
 }
 
-// not implemented
+// Currently supports IKEv2 only
 type payloadEncrypted struct {
-	raw []byte
+	// raw []byte
+	iv []byte
+	ciphertext []byte
+	checksum []byte
+}
+
+func (p *payloadEncrypted) marshal() (x []byte) {
+	x = append(x, p.iv...)
+	x = append(x, p.ciphertext...)
+	x = append(x, p.checksum...)
+	return
+}
+
+func (p *payloadEncrypted) unmarshal(data []byte) bool {
+	// Don't know the lengths of IV, checksum, etc. so cannot decode without a config
+	return false // Does not have sufficient information to unmarshal
 }
 
 // not implemented

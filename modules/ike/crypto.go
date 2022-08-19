@@ -3,6 +3,7 @@ package ike
 import (
 	"bytes"
 	"crypto/hmac"
+	"encoding/hex"
 	"fmt"
 	"hash"
 	"io"
@@ -68,4 +69,19 @@ func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) {
 	crypto.SK_er = genBytes(keyStream, encLength)
 	crypto.SK_pi = genBytes(keyStream, prfLength)
 	crypto.SK_pr = genBytes(keyStream, prfLength)
+}
+
+func (c *InitiatorConfig) getCiphertextLength(plaintextLength int) int {
+	return (plaintextLength + c.blockSize - 1) / c.blockSize * c.blockSize
+}
+
+func (c *InitiatorConfig) encryptAndDigest(iv []byte, associatedData []byte, plaintext []byte) (ciphertext []byte, checksum []byte) {
+	// Stub!
+	// Need to MAC associatedData + iv + ciphertext in non GCM mode
+	fmt.Printf("IV: %s\n", hex.EncodeToString(iv))
+	fmt.Printf("Associated data: %s\n", hex.EncodeToString(associatedData))
+	fmt.Printf("Plaintext: %s\n", hex.EncodeToString(plaintext))
+	ciphertext = bytes.Repeat([]byte{0xcc}, c.getCiphertextLength(len(plaintext))) // round up to block size
+	checksum = bytes.Repeat([]byte{0x55}, c.integChecksumLength)
+	return
 }
