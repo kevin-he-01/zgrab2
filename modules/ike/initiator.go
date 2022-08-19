@@ -83,6 +83,9 @@ type InitiatorConfig struct {
 	// List of proposals to send in the initiator security association message.
 	Proposals []Proposal `json:"proposals"`
 
+	// List of proposals to send in the initiator's second security association message.
+	ESPProposals []Proposal `json:"esp_proposals"`
+
 	// Timeout is the maximum amount of time for the UDP connection to
 	// establish.  A Timeout of zero means no timeout.
 	Timeout time.Duration
@@ -628,10 +631,14 @@ func (c *Conn) buildInitiatorAuth(config *InitiatorConfig) (msg *ikeMessage) {
 	msg.hdr.flags = 0x08            // flags (bit 3 set)
 	msg.hdr.messageId = MID_IKE_AUTH // Message ID
 
-	// TODO: build payloads
 	payload1 := c.buildPayload(config, IDENTIFICATION_INITIATOR_V2)
 	// payload1 := c.buildPayload(config, NONCE_V2)
 	msg.payloads = append(msg.payloads, payload1)
+
+	payload2 := new(payload)
+	payload2.payloadType = SECURITY_ASSOCIATION_V2
+	payload2.body = c.buildPayloadSecurityAssociationV2(config, true)
+	msg.payloads = append(msg.payloads, payload2)
 
 	return
 }
@@ -660,7 +667,7 @@ func (c *Conn) buildPayload(config *InitiatorConfig, payloadType uint8) (p *payl
 		p.body = c.buildPayloadVendorId(config)
 	//  IKEv2
 	case SECURITY_ASSOCIATION_V2:
-		p.body = c.buildPayloadSecurityAssociationV2(config)
+		p.body = c.buildPayloadSecurityAssociationV2(config, false) // defaults to IKE
 	case KEY_EXCHANGE_V2:
 		p.body = c.buildPayloadKeyExchangeV2(config)
 	case IDENTIFICATION_INITIATOR_V2:
@@ -735,10 +742,14 @@ func buildProposalV1(proposalConfig Proposal) (p *proposalV1) {
 	return
 }
 
-func (c *Conn) buildPayloadSecurityAssociationV2(config *InitiatorConfig) (p *payloadSecurityAssociationV2) {
+func (c *Conn) buildPayloadSecurityAssociationV2(config *InitiatorConfig, esp bool) (p *payloadSecurityAssociationV2) {
 	p = new(payloadSecurityAssociationV2)
-	for _, proposalConfig := range config.Proposals {
-		p.proposals = append(p.proposals, buildProposalV2(proposalConfig))
+	proposals := config.Proposals
+	if esp {
+		proposals = config.ESPProposals
+	}
+	for _, proposalConfig := range proposals {
+		p.proposals = append(p.proposals, buildProposalV2(proposalConfig, esp))
 	}
 	if len(p.proposals) > 0 {
 		p.proposals[len(p.proposals)-1].lastProposal = true
@@ -746,12 +757,20 @@ func (c *Conn) buildPayloadSecurityAssociationV2(config *InitiatorConfig) (p *pa
 	return p
 }
 
-func buildProposalV2(proposalConfig Proposal) (p *proposalV2) {
+func buildProposalV2(proposalConfig Proposal, esp bool) (p *proposalV2) {
 	p = new(proposalV2)
-	p.protocolId = IKE_V2
+	if esp {
+		p.protocolId = ESP_V2
+	} else {
+		p.protocolId = IKE_V2
+	}
 	p.proposalNum = proposalConfig.ProposalNum
 	p.lastProposal = false
-	p.spi = []byte{}
+	if esp {
+		p.spi = []byte{0xde, 0xad, 0xbe, 0xef} // TODO: generate a random one
+	} else {
+		p.spi = []byte{}
+	}
 
 	for _, transformConfig := range proposalConfig.Transforms {
 		t := buildTransformV2(transformConfig)
@@ -1098,6 +1117,7 @@ func (c *InitiatorConfig) MakeEAP() {
 			},
 			},
 		}
+		c.ESPProposals = c.Proposals // TODO: for now, later use a broader one
 	}
 }
 
