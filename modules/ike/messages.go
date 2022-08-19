@@ -1,6 +1,7 @@
 package ike
 
 import (
+	"crypto/sha1"
 	"errors"
 	"fmt"
 )
@@ -154,7 +155,6 @@ func (p *ikeMessage) getResponderDHGroup() uint16 {
 }
 
 func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
-	// TODO: extract the selected cipher suite (HMAC,INTEGRITY,ENCRYPTION) from responder info
 	kexFound := false
 	nonceFound := false
 	for _, payload := range p.payloads {
@@ -177,6 +177,15 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 	if !nonceFound {
 		return fmt.Errorf("Nonce payload not found")
 	}
+	// TODO: extract the selected cipher suite (HMAC,INTEGRITY,ENCRYPTION) from responder info
+	// For now, assume HMAC_SHA1_96 as integrity and SHA1 as PRF, and AES-256 as encryption algo
+	config.prfFunc = sha1.New
+	config.integFunc = sha1.New
+	config.prfKeyLength = 20
+	config.integKeyLength = 20
+	config.integChecksumLength = 12 // HMAC_SHA1_96 (notice size truncated to 96 bits or 12 bytes)
+	config.encIVLength = 16
+	config.encKeyLength = 32
 	return nil
 }
 

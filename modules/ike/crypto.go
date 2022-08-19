@@ -3,7 +3,6 @@ package ike
 import (
 	"bytes"
 	"crypto/hmac"
-	"crypto/sha1"
 	"fmt"
 	"hash"
 	"io"
@@ -38,12 +37,10 @@ func genBytes(rdr io.Reader, nr int) (data []byte) {
 }
 
 func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) {
-	// FIXME: for now, assume SHA1 as both integrity and PRF, and AES-256 as encryption algo should lookup from config
-	prfFunc := sha1.New
-	prfLength := 20 // Preferred key length of PRF
-	integLength := 20 // Length of integrity algorithm key (for AUTH_NONE like in GCM, it is 0)
-	encLength := 32 // Length of key in chosen encryption algorithm
-	// *** End crypto selection
+	prfFunc := c.prfFunc
+	prfLength := c.prfKeyLength
+	integLength := c.integKeyLength
+	encLength := c.encKeyLength
 
 	crypto := c.ConnLog.Crypto
 	spii := conn.initiatorSPI[:]

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash"
 	"net"
 	"strings"
 	"time"
@@ -104,10 +105,22 @@ type InitiatorConfig struct {
 
 	ProbeFile string
 
-	// Misc connection states
+	//// Misc connection states
 
+	// Responder nonce and key exchange
 	responderNonce []byte
 	responderKex []byte
+
+	// Crypto parameters (depends on responder selected proposal)
+	prfFunc func() hash.Hash
+	prfKeyLength int // Preferred key length of selected PRF
+	integFunc func() hash.Hash
+	integKeyLength int // Key length for the selected integrity algorithm (0 for AUTH_NONE)
+	integChecksumLength int // Length of checksum in encrypted payload
+	encKeyLength int // Length of key in chosen encryption algorithm
+	encIVLength int // Length of IV in encrypted payload
+
+	// Flag to indicate everything is initialized (avoid nil pointer deference)
 	saInitComplete bool
 }
 
