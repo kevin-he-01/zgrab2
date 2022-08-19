@@ -632,13 +632,18 @@ func (c *Conn) buildInitiatorAuth(config *InitiatorConfig) (msg *ikeMessage) {
 	msg.hdr.messageId = MID_IKE_AUTH // Message ID
 
 	payload1 := c.buildPayload(config, IDENTIFICATION_INITIATOR_V2)
-	// payload1 := c.buildPayload(config, NONCE_V2)
 	msg.payloads = append(msg.payloads, payload1)
 
 	payload2 := new(payload)
 	payload2.payloadType = SECURITY_ASSOCIATION_V2
 	payload2.body = c.buildPayloadSecurityAssociationV2(config, true)
 	msg.payloads = append(msg.payloads, payload2)
+
+	payload3 := c.buildPayload(config, TRAFFIC_SELECTOR_INITIATOR_V2)
+	msg.payloads = append(msg.payloads, payload3)
+
+	payload4 := c.buildPayload(config, TRAFFIC_SELECTOR_RESPONDER_V2)
+	msg.payloads = append(msg.payloads, payload4)
 
 	return
 }
@@ -683,7 +688,9 @@ func (c *Conn) buildPayload(config *InitiatorConfig, payloadType uint8) (p *payl
 	case VENDOR_ID_V2:
 		p.body = c.buildPayloadVendorId(config)
 	case TRAFFIC_SELECTOR_INITIATOR_V2:
+		p.body = c.buildPayloadTrafficSelector(config)
 	case TRAFFIC_SELECTOR_RESPONDER_V2:
+		p.body = c.buildPayloadTrafficSelector(config)
 	case ENCRYPTED_V2:
 	case CONFIGURATION_V2:
 	case EXTENSIBLE_AUTHENTICATION_V2:
@@ -850,6 +857,11 @@ func (c *Conn) buildPayloadIdentification(config *InitiatorConfig) (p *payloadId
 
 func (c *Conn) buildPayloadVendorId(config *InitiatorConfig) (p *payloadVendorId) {
 	p = new(payloadVendorId)
+	return
+}
+
+func (c *Conn) buildPayloadTrafficSelector(config *InitiatorConfig) (p *payloadTrafficSelector) {
+	p = new(payloadTrafficSelector)
 	return
 }
 

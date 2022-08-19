@@ -385,8 +385,15 @@ func (p *payload) marshal() (x []byte) {
 		} else {
 			x = append(x, sa.marshal()...)
 		}
+	case TRAFFIC_SELECTOR_INITIATOR_V2, TRAFFIC_SELECTOR_RESPONDER_V2:
+		if sa, ok := p.body.(*payloadTrafficSelector); !ok {
+			return
+		} else {
+			x = append(x, sa.marshal()...)
+		}
 	default:
-		return
+		// return
+		panic(fmt.Errorf("Unable to marshal payload of type %d", p.payloadType))
 	}
 
 	p.length = uint16(len(x))
@@ -1419,9 +1426,18 @@ func (p *payloadVendorId) unmarshal(data []byte) bool {
 	return true
 }
 
-// not implemented
 type payloadTrafficSelector struct {
 	raw []byte
+}
+
+// Currently using default (all addresses i.e. 0.0.0.0/0) on all ports 0-65535
+func (p *payloadTrafficSelector) marshal() (x []byte) {
+	// 01000000070000100000ffff00000000ffffffff
+	return []byte("\x01\x00\x00\x00\x07\x00\x00\x10\x00\x00\xff\xff\x00\x00\x00\x00\xff\xff\xff\xff")
+}
+
+func (p *payloadTrafficSelector) unmarshal(data []byte) bool {
+	return true // no data to extract
 }
 
 // not implemented

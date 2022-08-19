@@ -1,0 +1,6 @@
+Important ones
+- Log all the payloads (traffic selector is missing)
+- Generate random ESP SPI
+
+Other
+- Support more algorithms 
