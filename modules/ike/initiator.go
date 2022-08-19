@@ -105,6 +105,7 @@ type InitiatorConfig struct {
 
 	responderNonce []byte
 	responderKex []byte
+	saInitComplete bool
 }
 
 func (c *Conn) initiatorHandshake(config *InitiatorConfig) (err error) {
@@ -493,7 +494,7 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 	var response *ikeMessage
 
 	// Messages can come in any order and be retransmitted, so expect anything
-	for config.ConnLog.ResponderSAInit == nil {
+	for config.ConnLog.ResponderSAInit == nil || config.ConnLog.ResponderAuth == nil {
 
 		// Read response
 		response, err = c.readMessage()
@@ -558,8 +559,22 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 				return
 			}
 			config.computeCryptoKeys(c)
+			config.saInitComplete = true
+
+			// Send IKE_AUTH
+			msg := c.buildInitiatorAuth(config)
+			if err = c.writeMessage(msg); err != nil {
+				return
+			}
+			config.ConnLog.InitiatorAuth = msg.MakeLog()
 		case MID_IKE_AUTH:
 			config.ConnLog.ResponderAuth = log
+			if !config.saInitComplete {
+				// crypto parameters are uninitialized at this point, so fail
+				err = fmt.Errorf("Received IKE_AUTH packet before IKE_SA_INIT")
+				return
+			}
+			// TODO: decrypt packet and analyze data
 		default:
 			// unexpected message
 			config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
@@ -578,7 +593,7 @@ func (c *Conn) buildInitiatorSAInit(config *InitiatorConfig) (msg *ikeMessage) {
 	msg.hdr.minorVersion = 0
 	msg.hdr.exchangeType = IKE_SA_INIT_V2
 	msg.hdr.flags = 0x08            // flags (bit 3 set)
-	msg.hdr.messageId = 0           // Message ID
+	msg.hdr.messageId = MID_IKE_SA_INIT // Message ID
 	// msg.hdr.length = IKE_HEADER_LEN // header + body
 
 	// add payloads
@@ -601,6 +616,26 @@ func (c *Conn) buildInitiatorSAInit(config *InitiatorConfig) (msg *ikeMessage) {
 	return
 }
 
+func (c *Conn) buildInitiatorAuth(config *InitiatorConfig) (msg *ikeMessage) {
+	// TODO: build encrypted payload
+	msg = new(ikeMessage)
+	msg.hdr = new(ikeHeader)
+	copy(msg.hdr.initiatorSPI[:], c.initiatorSPI[:])
+	copy(msg.hdr.responderSPI[:], c.responderSPI[:])
+	msg.hdr.majorVersion = VersionIKEv2
+	msg.hdr.minorVersion = 0
+	msg.hdr.exchangeType = IKE_AUTH_V2
+	msg.hdr.flags = 0x08            // flags (bit 3 set)
+	msg.hdr.messageId = MID_IKE_AUTH // Message ID
+
+	// TODO: build payloads
+	payload1 := c.buildPayload(config, IDENTIFICATION_INITIATOR_V2)
+	// payload1 := c.buildPayload(config, NONCE_V2)
+	msg.payloads = append(msg.payloads, payload1)
+
+	return
+}
+
 func (c *Conn) buildPayload(config *InitiatorConfig, payloadType uint8) (p *payload) {
 	p = new(payload)
 	p.payloadType = payloadType
@@ -612,7 +647,7 @@ func (c *Conn) buildPayload(config *InitiatorConfig, payloadType uint8) (p *payl
 	case KEY_EXCHANGE_V1:
 		p.body = c.buildPayloadKeyExchangeV1(config)
 	case IDENTIFICATION_V1:
-		p.body = c.buildPayloadIdentificationV1(config)
+		p.body = c.buildPayloadIdentification(config)
 	case CERTIFICATE_V1:
 	case CERTIFICATE_REQUEST_V1:
 	case HASH_V1:
@@ -629,6 +664,7 @@ func (c *Conn) buildPayload(config *InitiatorConfig, payloadType uint8) (p *payl
 	case KEY_EXCHANGE_V2:
 		p.body = c.buildPayloadKeyExchangeV2(config)
 	case IDENTIFICATION_INITIATOR_V2:
+		p.body = c.buildPayloadIdentification(config)
 	case IDENTIFICATION_RESPONDER_V2:
 	case CERTIFICATE_V2:
 	case CERTIFICATE_REQUEST_V2:
@@ -784,7 +820,7 @@ func (c *Conn) buildPayloadNonce(config *InitiatorConfig) (p *payloadNonce) {
 	return
 }
 
-func (c *Conn) buildPayloadIdentificationV1(config *InitiatorConfig) (p *payloadIdentification) {
+func (c *Conn) buildPayloadIdentification(config *InitiatorConfig) (p *payloadIdentification) {
 	// See https://datatracker.ietf.org/doc/html/rfc2407#section-4.6.2.1 for format
 	// See https://datatracker.ietf.org/doc/html/rfc4945 for even more details on identity authentication
 	p = new(payloadIdentification)
