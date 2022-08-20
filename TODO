@@ -5,4 +5,5 @@ Important ones
 Other
 - Support more algorithms
 - Processs INVALID_KEY_PAYLOAD appropriately again 
+- Support situation with COOKIES?? https://datatracker.ietf.org/doc/html/rfc7296#section-2.6
 - Is N(EAP_ONLY_AUTHENTICATION) necessary?

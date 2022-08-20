@@ -5,6 +5,8 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -229,6 +231,64 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 	config.blockSize = 16
 	config.encKeyLength = 32
 	return nil
+}
+
+// Expect the message to be either encrypted, or an encrypted fragment
+// Set connLog.ResponderAuth (with decrypted data) when all fragments are received
+// Return error if something goes wrong
+func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorConfig) (err error) {
+	connLog := config.ConnLog
+	if len(p.payloads) == 0 {
+		err = fmt.Errorf("IKE_AUTH response contains no payloads")
+		return
+	}
+	lastPayload := p.payloads[len(p.payloads) - 1]
+	switch lastPayload.payloadType {
+	case ENCRYPTED_V2:
+		log.Info("Received encrypted payload")
+		if connLog.ResponderAuthEncrypted != nil {
+			connLog.Retransmit = append(connLog.Retransmit, mLog)
+			return
+		}
+		connLog.ResponderAuthEncrypted = mLog
+		// TODO: Decrypt, currently just put dummy message
+		connLog.ResponderAuth = new(IkeMessage)
+	case ENCRYPTED_AND_AUTHENTICATED_FRAGMENT_V2:
+		body := lastPayload.body.(*payloadFragmentV2)
+		log.Infof("Received encrypted fragment: %d/%d", body.fragNum, body.totalFrags)
+		if !(1 <= body.fragNum && body.fragNum <= body.totalFrags && body.totalFrags != 0) {
+			// Bad integer values that violate MUST requirements outlined in https://www.rfc-editor.org/rfc/rfc7383.html#section-2.5
+			err = fmt.Errorf("Invalid fragment %d/%d", body.fragNum, body.totalFrags)
+			return
+		}
+		fragIndex := body.fragNum - 1
+		if connLog.ResponderAuthFragments == nil {
+			log.Info("First fragment received, setting up array")
+			// Parallel arrays of logs (capital I) and machine readable messages (lowercase I)
+			connLog.ResponderAuthFragments = make([]*IkeMessage, body.totalFrags)
+			config.fragmentsReceived = make([]*ikeMessage, body.totalFrags)
+		}
+		if len(connLog.ResponderAuthFragments) != int(body.totalFrags) {
+			err = fmt.Errorf("Inconsistent number of fragments, used to be %d, now %d", len(connLog.ResponderAuthFragments), body.totalFrags)
+			return
+		}
+		if connLog.ResponderAuthFragments[fragIndex] != nil {
+			connLog.Retransmit = append(connLog.Retransmit, mLog)
+			return
+		}
+		connLog.ResponderAuthFragments[fragIndex] = mLog
+		config.fragmentsReceived[fragIndex] = p
+		config.numFragsReceived++
+		if config.numFragsReceived >= body.totalFrags {
+			log.Info("All fragments received")
+			// TODO: Decrypt from config.fragmentsReceived, currently just put dummy message
+			connLog.ResponderAuth = new(IkeMessage)
+		}
+	default:
+		err = fmt.Errorf("IKE_AUTH response is not encrypted")
+		return
+	}
+	return
 }
 
 // IKEv1 and IKEv2 share the same message header format
@@ -629,6 +689,12 @@ func (p *payload) unmarshal(data []byte) bool {
 	case TRAFFIC_SELECTOR_INITIATOR_V2:
 	case TRAFFIC_SELECTOR_RESPONDER_V2:
 	case ENCRYPTED_V2:
+		pa := new(payloadEncrypted)
+		if ok := pa.unmarshal(p.raw[IKE_PAYLOAD_HEADER_LEN:]); !ok {
+			return false
+		} else {
+			p.body = pa
+		}
 	case CONFIGURATION_V2:
 	case EXTENSIBLE_AUTHENTICATION_V2:
 	case GENERIC_SECURE_PASSWORD_METHOD_V2:
@@ -636,6 +702,12 @@ func (p *payload) unmarshal(data []byte) bool {
 	case GROUP_SECURITY_ASSOCIATION_V2:
 	case KEY_DOWNLOAD_V2:
 	case ENCRYPTED_AND_AUTHENTICATED_FRAGMENT_V2:
+		pa := new(payloadFragmentV2)
+		if ok := pa.unmarshal(p.raw[IKE_PAYLOAD_HEADER_LEN:]); !ok {
+			return false
+		} else {
+			p.body = pa
+		}
 	default:
 		// unrecognized payload type
 		return false
@@ -1499,13 +1571,17 @@ func (p *payloadTrafficSelector) unmarshal(data []byte) bool {
 
 // Currently supports IKEv2 only
 type payloadEncrypted struct {
-	// raw []byte
+	raw []byte // unclassified raw data (concatenation of iv + ciphertext + checksum)
 	iv []byte
 	ciphertext []byte
 	checksum []byte
 }
 
 func (p *payloadEncrypted) marshal() (x []byte) {
+	if p.raw != nil {
+		x = append(x, p.raw...)
+		return
+	}
 	x = append(x, p.iv...)
 	x = append(x, p.ciphertext...)
 	x = append(x, p.checksum...)
@@ -1514,7 +1590,39 @@ func (p *payloadEncrypted) marshal() (x []byte) {
 
 func (p *payloadEncrypted) unmarshal(data []byte) bool {
 	// Don't know the lengths of IV, checksum, etc. so cannot decode without a config
-	return false // Does not have sufficient information to unmarshal
+	p.raw = nil
+	p.raw = append(p.raw, data...)
+	return true // Does not have sufficient information to unmarshal
+}
+
+type payloadFragmentV2 struct { // Encrypted and Authenticated Fragment in IKEv2
+	fragNum uint16
+	totalFrags uint16
+	enc []byte // IV + Encrypted Data + Checksum
+}
+
+func (p *payloadFragmentV2) marshal() (x []byte) {
+	// WARNING: untested code!
+	x = make([]byte, 4)
+	x[0] = uint8(p.fragNum >> 8)
+	x[1] = uint8(p.fragNum)
+	x[2] = uint8(p.totalFrags >> 8)
+	x[3] = uint8(p.totalFrags)
+	x = append(x, p.enc...)
+	return
+}
+
+func (p *payloadFragmentV2) unmarshal(data []byte) bool {
+	if len(data) < 4 {
+		return false
+	}
+
+	p.fragNum = uint16(data[0])<<8 | uint16(data[1])
+	p.totalFrags = uint16(data[2])<<8 | uint16(data[3])
+	p.enc = nil
+	p.enc = append(p.enc, data[4:]...)
+
+	return true
 }
 
 // not implemented

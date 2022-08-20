@@ -125,6 +125,10 @@ type InitiatorConfig struct {
 
 	// Flag to indicate everything is initialized (avoid nil pointer deference)
 	saInitComplete bool
+
+	// Fragments for IKE_AUTH received
+	numFragsReceived uint16
+	fragmentsReceived []*ikeMessage
 }
 
 func (c *Conn) initiatorHandshake(config *InitiatorConfig) (err error) {
@@ -513,7 +517,7 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 	var response *ikeMessage
 
 	// Messages can come in any order and be retransmitted, so expect anything
-	for config.ConnLog.ResponderSAInit == nil || config.ConnLog.ResponderAuthEncrypted == nil { // TODO: deal with responder fragmentation
+	for config.ConnLog.ResponderSAInit == nil || config.ConnLog.ResponderAuth == nil {
 
 		// Read response
 		response, err = c.readMessage()
@@ -568,6 +572,10 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 
 		switch response.hdr.messageId {
 		case MID_IKE_SA_INIT:
+			if config.saInitComplete {
+				config.ConnLog.Retransmit = append(config.ConnLog.Retransmit, log)
+				continue
+			}
 			config.ConnLog.ResponderSAInit = log
 			err = response.setCryptoParamsV2(config)
 			if err != nil {
@@ -589,13 +597,14 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 				return
 			}
 		case MID_IKE_AUTH:
-			config.ConnLog.ResponderAuthEncrypted = log // TODO: collect and log all the fragments, not just one of them
+			// zlog.Info("payload IKE_AUTH ", response.payloads[0].payloadType, response.payloads[0].body)
 			if !config.saInitComplete {
 				// crypto parameters are uninitialized at this point, so fail
+				config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
 				err = fmt.Errorf("Received IKE_AUTH packet before IKE_SA_INIT")
 				return
 			}
-			// TODO: decrypt packet and analyze data
+			response.processResponderAuth(log, config)
 		default:
 			// unexpected message
 			config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)

@@ -38,10 +38,12 @@ type HandshakeLog struct {
 	InitiatorAuthEncrypted *IkeMessage `json:"initiator_ike_auth_enc,omitempty"`
 	ResponderAuth *IkeMessage `json:"responder_ike_auth,omitempty"`
 	ResponderAuthEncrypted *IkeMessage `json:"responder_ike_auth_enc,omitempty"`
+	ResponderAuthFragments []*IkeMessage `json:"responder_ike_auth_frag,omitempty"` // (encrypted) fragments
 
 	// All
 	ErrorNotification *IkeMessage   `json:"error_notification,omitempty"`
 	Unexpected        []*IkeMessage `json:"unexpected_messages,omitempty"`
+	Retransmit        []*IkeMessage `json:"retransmitted_messages,omitempty"`
 
 	Crypto *CryptoInfo `json:"crypto,omitempty"`
 }
