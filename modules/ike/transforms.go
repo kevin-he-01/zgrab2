@@ -43,7 +43,6 @@ func parseEncAlg(alg string) []Attribute {
 			{Type: KEY_LENGTH_V1, Value: uint16ToBytes(256)},
 			{Type: ENCRYPTION_ALGORITHM_V1, Value: uint16ToBytes(ENCR_CAMELLIA_CBC_V1)},
 		}
-	// TODO: add camellia support
 	default:
 		return nil
 	}
