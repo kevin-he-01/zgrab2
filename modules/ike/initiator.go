@@ -1221,7 +1221,7 @@ func (c *InitiatorConfig) MakeALL() {
 			{ProposalNum: 1, Transforms: c.AllTransforms},
 		}
 	} else {
-		dhGroupTransforms := []Transform{ // TODO: support these by adding entries in common.go -> groupKexMap
+		dhGroupTransforms := []Transform{
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_768_V2},
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_V2},
 			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1536_V2},
