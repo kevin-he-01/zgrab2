@@ -35,7 +35,9 @@ type HandshakeLog struct {
 
 	// IKEv2 IKE_AUTH
 	InitiatorAuth *IkeMessage `json:"initiator_ike_auth,omitempty"`
+	InitiatorAuthEncrypted *IkeMessage `json:"initiator_ike_auth_enc,omitempty"`
 	ResponderAuth *IkeMessage `json:"responder_ike_auth,omitempty"`
+	ResponderAuthEncrypted *IkeMessage `json:"responder_ike_auth_enc,omitempty"`
 
 	// All
 	ErrorNotification *IkeMessage   `json:"error_notification,omitempty"`

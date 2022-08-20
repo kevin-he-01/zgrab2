@@ -511,7 +511,7 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 	var response *ikeMessage
 
 	// Messages can come in any order and be retransmitted, so expect anything
-	for config.ConnLog.ResponderSAInit == nil || config.ConnLog.ResponderAuth == nil {
+	for config.ConnLog.ResponderSAInit == nil || config.ConnLog.ResponderAuthEncrypted == nil { // TODO: deal with responder fragmentation
 
 		// Read response
 		response, err = c.readMessage()
@@ -580,12 +580,14 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 
 			// Send IKE_AUTH
 			msg := c.buildInitiatorAuth(config)
+			config.ConnLog.InitiatorAuth = msg.MakeLog()
+			msg.encrypt(config)
+			config.ConnLog.InitiatorAuthEncrypted = msg.MakeLog()
 			if err = c.writeMessage(msg); err != nil {
 				return
 			}
-			config.ConnLog.InitiatorAuth = msg.MakeLog()
 		case MID_IKE_AUTH:
-			config.ConnLog.ResponderAuth = log
+			config.ConnLog.ResponderAuthEncrypted = log // TODO: collect and log all the fragments, not just one of them
 			if !config.saInitComplete {
 				// crypto parameters are uninitialized at this point, so fail
 				err = fmt.Errorf("Received IKE_AUTH packet before IKE_SA_INIT")
@@ -634,7 +636,6 @@ func (c *Conn) buildInitiatorSAInit(config *InitiatorConfig) (msg *ikeMessage) {
 }
 
 func (c *Conn) buildInitiatorAuth(config *InitiatorConfig) (msg *ikeMessage) {
-	// TODO: build encrypted payload
 	msg = new(ikeMessage)
 	msg.hdr = new(ikeHeader)
 	copy(msg.hdr.initiatorSPI[:], c.initiatorSPI[:])
@@ -658,8 +659,6 @@ func (c *Conn) buildInitiatorAuth(config *InitiatorConfig) (msg *ikeMessage) {
 
 	payload4 := c.buildPayload(config, TRAFFIC_SELECTOR_RESPONDER_V2)
 	msg.payloads = append(msg.payloads, payload4)
-
-	msg.encrypt(config)
 
 	return
 }
