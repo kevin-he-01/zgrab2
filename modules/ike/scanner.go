@@ -41,6 +41,7 @@ type Flags struct {
 	BuiltIn string `long:"ike-builtin" default:"EAP" description:"Use a built-in IKE config, overwriting other command-line IKE options."`
 	Identity string `long:"ike-identity" default:"email:research-scan@sysnet.ucsd.edu" description:"The identity. See https://docs.strongswan.org/docs/5.9/config/identityParsing.html for parsing rules"`
 	ProbeFile string `long:"ike-probe-file" default:"" description:"Write the initial initiator packet to file and exit. (This is useful for creating zmap probes.)"`
+	NoFragment bool `long:"ike-no-fragment" description:"Turn off fragmentation support. Will not send a NOTIFY payload with IKEV2_FRAGMENTATION_SUPPORTED"`
 }
 
 type Scanner struct {
@@ -210,6 +211,7 @@ func (s *Scanner) ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret.AllTransforms = s.transforms
 	ret.ProbeFile = flags.ProbeFile
 	ret.NonceData = s.nonce
+	ret.NoFragment = flags.NoFragment
 	return ret
 }
 

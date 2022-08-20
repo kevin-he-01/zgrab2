@@ -105,6 +105,8 @@ type InitiatorConfig struct {
 
 	ProbeFile string
 
+	NoFragment bool
+
 	//// Misc connection states
 
 	// Responder nonce and key exchange
@@ -632,6 +634,11 @@ func (c *Conn) buildInitiatorSAInit(config *InitiatorConfig) (msg *ikeMessage) {
 	// msg.hdr.length += uint32(payload3.length)
 	msg.payloads = append(msg.payloads, payload3)
 
+	if !config.NoFragment {
+		payloadFragmentation := notifyFragmentationV2()
+		msg.payloads = append(msg.payloads, payloadFragmentation)
+	}
+
 	return
 }
 
@@ -713,6 +720,20 @@ func (c *Conn) buildPayload(config *InitiatorConfig, payloadType uint8) (p *payl
 		zlog.Fatalf("unrecognized payload type: %v", p.payloadType)
 	}
 
+	return
+}
+
+func notifyFragmentationV2() (p *payload) {
+	p = new(payload)
+	p.payloadType = NOTIFY_V2
+
+	body := new(payloadNotifyV2)
+	// body.protocolId = 0
+	// body.spi = nil
+	body.notifyType = IKEV2_FRAGMENTATION_SUPPORTED_V2
+	// body.notifyData = nil
+
+	p.body = body
 	return
 }
 
