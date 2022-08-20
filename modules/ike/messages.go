@@ -41,7 +41,7 @@ func (p *ikeMessage) encrypt(c *InitiatorConfig) {
 	assocData = assocData[:len(assocData) - (c.encIVLength + ctxtLength + c.integChecksumLength)]
 	p.raw = nil // Invalidate cache
 	
-	body.ciphertext, body.checksum = c.encryptAndDigest(body.iv, assocData, plaintext) // Fill in real ciphertext and checksum
+	body.checksum = c.encryptAndDigest(body.iv, assocData, plaintext, body.ciphertext) // Fill in real ciphertext and checksum
 }
 
 func (p *ikeMessage) fixNextPayloads() {

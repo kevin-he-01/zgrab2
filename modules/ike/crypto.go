@@ -2,8 +2,9 @@ package ike
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/hmac"
-	"encoding/hex"
 	"fmt"
 	"hash"
 	"io"
@@ -72,16 +73,43 @@ func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) {
 }
 
 func (c *InitiatorConfig) getCiphertextLength(plaintextLength int) int {
-	return (plaintextLength + c.blockSize - 1) / c.blockSize * c.blockSize
+	return plaintextLength - plaintextLength % c.blockSize + c.blockSize
 }
 
-func (c *InitiatorConfig) encryptAndDigest(iv []byte, associatedData []byte, plaintext []byte) (ciphertext []byte, checksum []byte) {
-	// Stub!
+func ikePad(pt []byte, bs int) []byte {
+	// IKE specific padding scheme
+	length := len(pt)
+	padLength := bs - 1 - length % bs
+	padding := make([]byte, padLength)
+	pt = append(pt, padding...)
+	pt = append(pt, byte(padLength))
+	return pt
+}
+
+func aesCbcEncrypt(key []byte, iv []byte, plaintext []byte, ciphertext []byte) {
+	plaintext = ikePad(plaintext, len(iv)) // block size must be same as IV length
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err)
+	}
+	mode := cipher.NewCBCEncrypter(block, iv)
+	mode.CryptBlocks(ciphertext, plaintext)
+}
+
+func (c *InitiatorConfig) encryptAndDigest(iv []byte, associatedData []byte, plaintext []byte, ciphertext []byte) []byte {
+	crypto := c.ConnLog.Crypto
+	// fmt.Printf("IV: %s\n", hex.EncodeToString(iv))
+	// fmt.Printf("Associated data: %s\n", hex.EncodeToString(associatedData))
+	// fmt.Printf("Plaintext: %s\n", hex.EncodeToString(plaintext))
+	// copy(ciphertext, bytes.Repeat([]byte{0xcc}, c.getCiphertextLength(len(plaintext)))) // round up to block size
+	aesCbcEncrypt(crypto.SK_ei, iv, plaintext, ciphertext)
+	// return bytes.Repeat([]byte{0x55}, c.integChecksumLength)
+	
+	// Integrity tag
 	// Need to MAC associatedData + iv + ciphertext in non GCM mode
-	fmt.Printf("IV: %s\n", hex.EncodeToString(iv))
-	fmt.Printf("Associated data: %s\n", hex.EncodeToString(associatedData))
-	fmt.Printf("Plaintext: %s\n", hex.EncodeToString(plaintext))
-	ciphertext = bytes.Repeat([]byte{0xcc}, c.getCiphertextLength(len(plaintext))) // round up to block size
-	checksum = bytes.Repeat([]byte{0x55}, c.integChecksumLength)
-	return
+	prf := hmac.New(c.integFunc, crypto.SK_ai)
+	prf.Write(associatedData)
+	prf.Write(iv)
+	prf.Write(ciphertext)
+	return prf.Sum(nil)[:c.integChecksumLength]
 }
