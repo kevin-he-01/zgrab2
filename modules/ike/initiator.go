@@ -128,7 +128,8 @@ type InitiatorConfig struct {
 
 	// Fragments for IKE_AUTH received
 	numFragsReceived uint16
-	fragmentsReceived []*ikeMessage
+	fragmentsReceived [][]byte
+	firstFragmentMessage *ikeMessage
 }
 
 func (c *Conn) initiatorHandshake(config *InitiatorConfig) (err error) {

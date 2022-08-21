@@ -296,7 +296,7 @@ func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorCon
 			log.Info("First fragment received, setting up array")
 			// Parallel arrays of logs (capital I) and machine readable messages (lowercase I)
 			connLog.ResponderAuthFragments = make([]*IkeMessage, body.totalFrags)
-			config.fragmentsReceived = make([]*ikeMessage, body.totalFrags)
+			config.fragmentsReceived = make([][]byte, body.totalFrags)
 		}
 		if len(connLog.ResponderAuthFragments) != int(body.totalFrags) {
 			err = fmt.Errorf("Inconsistent number of fragments, used to be %d, now %d", len(connLog.ResponderAuthFragments), body.totalFrags)
@@ -307,12 +307,29 @@ func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorCon
 			return
 		}
 		connLog.ResponderAuthFragments[fragIndex] = mLog
-		config.fragmentsReceived[fragIndex] = p
+		config.fragmentsReceived[fragIndex] = body.enc
+		if fragIndex == 0 {
+			config.firstFragmentMessage = p
+		}
 		config.numFragsReceived++
 		if config.numFragsReceived >= body.totalFrags {
 			log.Info("All fragments received")
-			// TODO: Decrypt from config.fragmentsReceived, currently just put dummy message
-			connLog.ResponderAuth = new(IkeMessage)
+			var pt []byte
+			skeleton := config.firstFragmentMessage
+			skeletonEncPayload := skeleton.payloads[len(skeleton.payloads) - 1]
+			for i, fragment := range config.fragmentsReceived {
+				errRaw, ptFrag := config.decrypt(fragment)
+				if errRaw != nil {
+					err = fmt.Errorf("Failed to decrypt fragment[%d]: %s", i, errRaw)
+					return
+				}
+				pt = append(pt, ptFrag...)
+			}
+			err = skeleton.decrypt(skeletonEncPayload.nextPayload, pt)
+			if err != nil {
+				return
+			}
+			connLog.ResponderAuth = skeleton.MakeLog()
 		}
 	default:
 		err = fmt.Errorf("IKE_AUTH response is not encrypted")
