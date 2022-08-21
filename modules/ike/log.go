@@ -79,10 +79,13 @@ func (msg *IkeMessage) MarshalJSON() ([]byte, error) {
 			aux = append(aux, *pa)
 		}
 		
-		//    if pa, ok := p.(*Certificate); ok {
-		//        aux = append(aux, *pa)
-		//    }
+		if pa, ok := p.(*Certificate); ok {
+			aux = append(aux, *pa)
+		}
 		if pa, ok := p.(*CertificateRequest); ok {
+			aux = append(aux, *pa)
+		}
+		if pa, ok := p.(*Authentication); ok {
 			aux = append(aux, *pa)
 		}
 		if pa, ok := p.(*Signature); ok {
@@ -218,19 +221,24 @@ func (p *payload) MakeLog() Payload {
 			return pa.MakeLog()
 		}
 	
-	//    case CERTIFICATE_V2:
-	//        if pa, ok := p.body.(*payloadCertificate); !ok {
-	//            return new(EmptyPayload)
-	//        } else {
-	//            return pa.MakeLog()
-	//        }
+	case CERTIFICATE_V2:
+		if pa, ok := p.body.(*payloadCertificate); !ok {
+			return new(EmptyPayload)
+		} else {
+			return pa.MakeLog()
+		}
 	case CERTIFICATE_REQUEST_V2:
 		if pa, ok := p.body.(*payloadCertificateRequest); !ok {
 			return new(EmptyPayload)
 		} else {
 			return pa.MakeLog()
 		}
-	//    case AUTHENTICATION_V2:
+	case AUTHENTICATION_V2:
+		if pa, ok := p.body.(*payloadAuthentication); !ok {
+			return new(EmptyPayload)
+		} else {
+			return pa.MakeLog()
+		}
 	
 	case NONCE_V2:
 		if pa, ok := p.body.(*payloadNonce); !ok {
@@ -257,10 +265,16 @@ func (p *payload) MakeLog() Payload {
 	return new(EmptyPayload)
 }
 
+type Certificate struct {
+	Name      string     `json:"type,omitempty"`
+	Encoding  uint8      `json:"encoding,omitempty"`
+	CertData  []byte     `json:"data,omitempty"`
+}
+
 type CertificateRequest struct {
 	Name      string     `json:"type,omitempty"`
 	Raw       []byte     `json:"raw,omitempty"`
-	Encoding  uint8      `json:"encoding,omitempty"` // TODO: make it a descriptive string
+	Encoding  uint8      `json:"encoding,omitempty"`
 	CertAuth  []byte	 `json:"ca,omitempty"`
 }
 
@@ -268,6 +282,24 @@ type Hash struct {
 	Name      string     `json:"type,omitempty"`
 	Raw       []byte     `json:"raw,omitempty"`
 	HashData  []byte     `json:"data,omitempty"`
+}
+
+type Authentication struct {
+	Name      string     `json:"type,omitempty"`
+	Raw       []byte     `json:"raw,omitempty"`
+	Method    uint8      `json:"method,omitempty"`
+	Data      []byte     `json:"data,omitempty"`
+}
+
+func (p *payloadCertificate) MakeLog() *Certificate {
+	cr := new(Certificate)
+	// cr.Raw = append(cr.Raw, p.marshal()...)
+
+	cr.Name = "certificate"
+	cr.Encoding = p.encoding
+	cr.CertData = p.certificateData
+
+	return cr
 }
 
 func (p *payloadCertificateRequest) MakeLog() *CertificateRequest {
@@ -289,6 +321,16 @@ func (p *payloadHashV1) MakeLog() *Hash {
 	ha.HashData = p.hashData
 
 	return ha
+}
+
+func (p *payloadAuthentication) MakeLog() *Authentication {
+	auth := new(Authentication)
+
+	auth.Name = "authentication"
+	auth.Method = p.authMethod
+	auth.Data = p.authData
+
+	return auth
 }
 
 type EmptyPayload struct {

@@ -525,6 +525,11 @@ func (p *payload) marshal() (x []byte) {
 			x = append(x, sa.marshal()...)
 		}
 	case AUTHENTICATION_V2:
+		if sa, ok := p.body.(*payloadAuthentication); !ok {
+			return
+		} else {
+			x = append(x, sa.marshal()...)
+		}
 	case NONCE_V2:
 		if sa, ok := p.body.(*payloadNonce); !ok {
 			return
@@ -711,6 +716,12 @@ func (p *payload) unmarshal(data []byte) bool {
 			p.body = pa
 		}
 	case AUTHENTICATION_V2:
+		pa := new(payloadAuthentication)
+		if ok := pa.unmarshal(p.raw[IKE_PAYLOAD_HEADER_LEN:]); !ok {
+			return false
+		} else {
+			p.body = pa
+		}
 	case NONCE_V2:
 		pa := new(payloadNonce)
 		if ok := pa.unmarshal(p.raw[IKE_PAYLOAD_HEADER_LEN:]); !ok {
@@ -1438,12 +1449,35 @@ func (p *payloadCertificateRequest) unmarshal(data []byte) bool {
 	return true
 }
 
-// not implemented
 type payloadAuthentication struct {
 	raw        []byte
 	authMethod uint8
 	reserved   uint32
 	authData   []byte
+}
+
+func (p *payloadAuthentication) marshal() (x []byte) {
+	if p.raw != nil {
+		return p.raw
+	}
+	x = make([]byte, 4)
+	x[0] = uint8(p.authMethod)
+	x[1] = 0 // Assume reserved == 0 for now
+	x[2] = 0
+	x[3] = 0
+	x = append(x, p.authData...)
+	return
+}
+
+func (p *payloadAuthentication) unmarshal(data []byte) bool {
+	p.raw = append([]byte{}, data...)
+	if len(data) < 4 {
+		return false
+	}
+	p.authMethod = uint8(data[0])
+	p.reserved = uint32(data[1])<<16 | uint32(data[2])<<8 | uint32(data[3])
+	p.authData = append([]byte{}, data[4:]...)
+	return true
 }
 
 // IKEv1 and IKEv2
