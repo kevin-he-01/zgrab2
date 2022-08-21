@@ -2,7 +2,6 @@ package ike
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"hash"
@@ -140,10 +139,8 @@ func (c *Conn) initiatorHandshake(config *InitiatorConfig) (err error) {
 
 	if config.Version == VersionIKEv2 {
 		if config.BuiltIn == "EAP" {
-			zlog.Info("Performing V2 handshake in EAP mode")
 			return c.initiatorHandshakeV2EAP(config)
 		} else {
-			zlog.Info("Performing V2 handshake in regular mode")
 			return c.initiatorHandshakeV2(config)
 		}
 	}
@@ -554,16 +551,12 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 		}
 
 		if bytes.Equal(c.responderSPI[:], make([]byte, 8)) {
-			zlog.Infof("First time connection, copying responder SPI %s", hex.EncodeToString(response.hdr.responderSPI[:]))
 			copy(c.responderSPI[:], response.hdr.responderSPI[:])
 			if response.hdr.messageId != MID_IKE_SA_INIT {
 				err = fmt.Errorf("First Message ID must be IKE_SA_INIT (0), but got %d", response.hdr.messageId)
 				return
 			}
 		}
-
-		// zlog.Infof("Initiator SPI: %s", hex.EncodeToString(c.initiatorSPI[:]))
-		// zlog.Infof("Responder SPI: %s", hex.EncodeToString(c.responderSPI[:]))
 
 		if !bytes.Equal(c.responderSPI[:], response.hdr.responderSPI[:]) {
 			config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
@@ -598,7 +591,6 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 				return
 			}
 		case MID_IKE_AUTH:
-			// zlog.Info("payload IKE_AUTH ", response.payloads[0].payloadType, response.payloads[0].body)
 			if !config.saInitComplete {
 				// crypto parameters are uninitialized at this point, so fail
 				config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)

@@ -149,12 +149,19 @@ func (s *Scanner) Init(flags zgrab2.ScanFlags) error {
 		log.Infof("IKE Version: %d", f.Version)
 		if f.Version == 1 {
 			log.Infof("IKEv1 mode: %s", f.ModeV1)
+		} else {
+			if f.NoFragment {
+				log.Info("IKEv2: Fragmentation disabled")
+			} else {
+				log.Info("IKEv2: Report IKEV2_FRAGMENTATION_SUPPORTED")
+			}
 		}
 		log.Infof("Initial DH Group: %d", s.groupNum)
 		log.Infof("IKE identity: %s", f.Identity)
 		log.Infof("IKE Built-in: %s", f.BuiltIn)
 		log.Infof("IKE Nonce (hex): %s", f.Nonce)
 		log.Infof("IKE Nonce length: %d bytes", len(f.Nonce) / 2) // 2 hex digit = 1 byte
+		log.SetLevel(log.DebugLevel)
 	}
 
 	return nil

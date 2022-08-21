@@ -267,7 +267,7 @@ func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorCon
 	switch lastPayload.payloadType {
 	case ENCRYPTED_V2:
 		body := lastPayload.body.(*payloadEncrypted)
-		log.Info("Received encrypted payload")
+		log.Debug("Received encrypted payload")
 		if connLog.ResponderAuthEncrypted != nil {
 			connLog.Retransmit = append(connLog.Retransmit, mLog)
 			return
@@ -285,7 +285,7 @@ func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorCon
 		connLog.ResponderAuth = p.MakeLog()
 	case ENCRYPTED_AND_AUTHENTICATED_FRAGMENT_V2:
 		body := lastPayload.body.(*payloadFragmentV2)
-		log.Infof("Received encrypted fragment: %d/%d", body.fragNum, body.totalFrags)
+		log.Debugf("Received encrypted fragment: %d/%d", body.fragNum, body.totalFrags)
 		if !(1 <= body.fragNum && body.fragNum <= body.totalFrags && body.totalFrags != 0) {
 			// Bad integer values that violate MUST requirements outlined in https://www.rfc-editor.org/rfc/rfc7383.html#section-2.5
 			err = fmt.Errorf("Invalid fragment %d/%d", body.fragNum, body.totalFrags)
@@ -293,7 +293,7 @@ func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorCon
 		}
 		fragIndex := body.fragNum - 1
 		if connLog.ResponderAuthFragments == nil {
-			log.Info("First fragment received, setting up array")
+			log.Debug("First fragment received, setting up array")
 			// Parallel arrays of logs (capital I) and machine readable messages (lowercase I)
 			connLog.ResponderAuthFragments = make([]*IkeMessage, body.totalFrags)
 			config.fragmentsReceived = make([][]byte, body.totalFrags)
@@ -313,7 +313,7 @@ func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorCon
 		}
 		config.numFragsReceived++
 		if config.numFragsReceived >= body.totalFrags {
-			log.Info("All fragments received")
+			log.Debug("All fragments received")
 			var pt []byte
 			skeleton := config.firstFragmentMessage
 			skeletonEncPayload := skeleton.payloads[len(skeleton.payloads) - 1]
