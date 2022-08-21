@@ -602,9 +602,11 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 				// crypto parameters are uninitialized at this point, so fail
 				config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
 				err = fmt.Errorf("Received IKE_AUTH packet before IKE_SA_INIT")
+			}
+			err = response.processResponderAuth(log, config)
+			if err != nil {
 				return
 			}
-			response.processResponderAuth(log, config)
 		default:
 			// unexpected message
 			config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)

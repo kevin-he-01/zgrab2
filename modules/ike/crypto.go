@@ -86,6 +86,20 @@ func ikePad(pt []byte, bs int) []byte {
 	return pt
 }
 
+func ikeUnpad(padded []byte) (err error, unpadded []byte) {
+	if len(padded) == 0 {
+		err = fmt.Errorf("Padded message has zero length")
+		return
+	}
+	padLength := padded[len(padded) - 1]
+	if int(padLength) >= len(padded) {
+		err = fmt.Errorf("Padding length is not strictly less than message length")
+		return
+	}
+	unpadded = padded[:len(padded) - 1 - int(padLength)]
+	return
+}
+
 func aesCbcEncrypt(key []byte, iv []byte, plaintext []byte, ciphertext []byte) {
 	plaintext = ikePad(plaintext, len(iv)) // block size must be same as IV length
 	block, err := aes.NewCipher(key)
@@ -94,6 +108,17 @@ func aesCbcEncrypt(key []byte, iv []byte, plaintext []byte, ciphertext []byte) {
 	}
 	mode := cipher.NewCBCEncrypter(block, iv)
 	mode.CryptBlocks(ciphertext, plaintext)
+}
+
+func aesCbcDecrypt(key []byte, iv []byte, ciphertext []byte) (error, []byte) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err)
+	}
+	mode := cipher.NewCBCDecrypter(block, iv)
+	paddedPt := make([]byte, len(ciphertext))
+	mode.CryptBlocks(paddedPt, ciphertext)
+	return ikeUnpad(paddedPt)
 }
 
 func (c *InitiatorConfig) encryptAndDigest(iv []byte, associatedData []byte, plaintext []byte, ciphertext []byte) []byte {
@@ -112,4 +137,20 @@ func (c *InitiatorConfig) encryptAndDigest(iv []byte, associatedData []byte, pla
 	prf.Write(iv)
 	prf.Write(ciphertext)
 	return prf.Sum(nil)[:c.integChecksumLength]
+}
+
+func (c *InitiatorConfig) decrypt(enc []byte) (err error, pt []byte) {
+	if len(enc) < c.encIVLength + c.integChecksumLength {
+		err = fmt.Errorf("Malformed encrypted payload. Message too short to fit just IV + checksum")
+		return
+	}
+	iv := enc[:c.encIVLength]
+	ctxt := enc[c.encIVLength:len(enc)-c.integChecksumLength]
+	if len(ctxt) % c.blockSize != 0 {
+		err = fmt.Errorf("Ciphertext is not a multiple of block size")
+		return
+	}
+	// Don't check integrity checksum since security isn't important for scanning
+	err, pt = aesCbcDecrypt(c.ConnLog.Crypto.SK_er, iv, ctxt)
+	return
 }

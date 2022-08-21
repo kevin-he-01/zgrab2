@@ -85,7 +85,30 @@ func (p *ikeMessage) marshal() (x []byte) {
 	return
 }
 
+func (p *ikeMessage) unmarshalPayloads(data []byte) bool {
+	curr := 0
+
+	nextPayload := p.hdr.nextPayload
+	for curr < len(data) && nextPayload != NO_NEXT_PAYLOAD {
+		pa := new(payload)
+		pa.payloadType = nextPayload
+		if ok := pa.unmarshal(data[curr:]); !ok {
+			return false
+		}
+		p.payloads = append(p.payloads, pa)
+		curr += int(pa.length)
+		nextPayload = pa.nextPayload
+	}
+
+	if curr != len(data) {
+		return false
+	}
+
+	return true
+}
+
 func (p *ikeMessage) unmarshal(data []byte) bool {
+	p.raw = nil
 	p.raw = append(p.raw, data...)
 
 	// parse header
@@ -98,26 +121,10 @@ func (p *ikeMessage) unmarshal(data []byte) bool {
 	if len(data) != int(p.hdr.length) {
 		return false
 	}
-
-	curr := IKE_HEADER_LEN
-
-	nextPayload := p.hdr.nextPayload
-	for curr < int(p.hdr.length) && nextPayload != NO_NEXT_PAYLOAD {
-		pa := new(payload)
-		pa.payloadType = nextPayload
-		if ok := pa.unmarshal(data[curr:]); !ok {
-			return false
-		}
-		p.payloads = append(p.payloads, pa)
-		curr += int(pa.length)
-		nextPayload = pa.nextPayload
-	}
-
-	if curr != int(p.hdr.length) {
+	
+	if (!p.unmarshalPayloads(data[IKE_HEADER_LEN:])) {
 		return false
 	}
-
-	p.raw = p.raw[:curr]
 
 	return true
 }
@@ -233,9 +240,23 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 	return nil
 }
 
+// Transform this message (with most of the header preserved) into a decrypted one given some plaintext
+func (p *ikeMessage) decrypt(firstPayload uint8, plaintextPayloads []byte) error {
+	p.hdr.nextPayload = firstPayload
+	p.payloads = nil
+	if !p.unmarshalPayloads(plaintextPayloads) {
+		return fmt.Errorf("Unmarshaling payloads failed")
+	}
+	// Invalidate caches
+	p.hdr.raw = nil
+	p.raw = nil
+	return nil
+}
+
 // Expect the message to be either encrypted, or an encrypted fragment
 // Set connLog.ResponderAuth (with decrypted data) when all fragments are received
 // Return error if something goes wrong
+// May mutate p to become the decrypted message
 func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorConfig) (err error) {
 	connLog := config.ConnLog
 	if len(p.payloads) == 0 {
@@ -245,14 +266,23 @@ func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorCon
 	lastPayload := p.payloads[len(p.payloads) - 1]
 	switch lastPayload.payloadType {
 	case ENCRYPTED_V2:
+		body := lastPayload.body.(*payloadEncrypted)
 		log.Info("Received encrypted payload")
 		if connLog.ResponderAuthEncrypted != nil {
 			connLog.Retransmit = append(connLog.Retransmit, mLog)
 			return
 		}
 		connLog.ResponderAuthEncrypted = mLog
-		// TODO: Decrypt, currently just put dummy message
-		connLog.ResponderAuth = new(IkeMessage)
+		var pt []byte
+		err, pt = config.decrypt(body.raw)
+		if err != nil {
+			return
+		}
+		err = p.decrypt(lastPayload.nextPayload, pt)
+		if err != nil {
+			return
+		}
+		connLog.ResponderAuth = p.MakeLog()
 	case ENCRYPTED_AND_AUTHENTICATED_FRAGMENT_V2:
 		body := lastPayload.body.(*payloadFragmentV2)
 		log.Infof("Received encrypted fragment: %d/%d", body.fragNum, body.totalFrags)
