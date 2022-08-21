@@ -2,6 +2,7 @@ package ike
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 )
 
@@ -94,6 +95,10 @@ func (msg *IkeMessage) MarshalJSON() ([]byte, error) {
 		if pa, ok := p.(*Hash); ok {
 			aux = append(aux, *pa)
 		}
+
+		if pa, ok := p.(*EmptyPayload); ok {
+			aux = append(aux, *pa)
+		}
 		
 	}
 
@@ -119,9 +124,30 @@ func (msg *ikeMessage) MakeLog() (m *IkeMessage) {
 	m.ResponderSPI = append([]byte{}, msg.hdr.responderSPI[:]...)
 	m.Raw = append(m.Raw, msg.marshal()...)
 	for _, payload := range msg.payloads {
-		m.Payloads = append(m.Payloads, payload.MakeLog())
+		m.Payloads = append(m.Payloads, payload.MakeLogAll())
 	}
 	return
+}
+
+// Includes unrecognized payloads
+func (p *payload) MakeLogAll() Payload {
+	pLog := p.MakeLog()
+	emp, ok := pLog.(*EmptyPayload)
+	if ok {
+		switch p.payloadType {
+		case ENCRYPTED_AND_AUTHENTICATED_FRAGMENT_V2:
+			emp.Name = "encrypted_fragment"
+		case ENCRYPTED_V2:
+			emp.Name = "encrypted"
+		case TRAFFIC_SELECTOR_INITIATOR_V2:
+			emp.Name = "traffic_selector_initiator"
+		case TRAFFIC_SELECTOR_RESPONDER_V2:
+			emp.Name = "traffic_selector_responder"
+		default:
+			emp.Name = fmt.Sprintf("stub_%d", p.payloadType)
+		}
+	}
+	return pLog
 }
 
 func (p *payload) MakeLog() Payload {
