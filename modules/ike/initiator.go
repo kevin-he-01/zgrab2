@@ -17,6 +17,82 @@ const (
 	MID_IKE_AUTH = 1
 )
 
+var (
+	allDhGroupTransforms = []Transform{
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_768_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1536_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_3072_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_4096_V2},
+		// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_6144_V2}, // Will make UDP payload too big causing crashes
+		// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_8192_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_S160_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S224_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S256_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_192_ECP_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_224_ECP_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_ECP_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_384_ECP_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_521_ECP_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_224_BRAINPOOL_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_BRAINPOOL_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_384_BRAINPOOL_V2},
+		{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_512_BRAINPOOL_V2},
+	}
+	allIntegrityTransforms = []Transform{
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_512_256_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_384_192_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_256_128_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA1_96_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_MD5_96_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_DES_MAC_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_KPDK_MD5_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_AES_XCBC_96_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_MD5_128_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA1_160_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_AES_CMAC_96_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_AES_128_GMAC_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_AES_192_GMAC_V2},
+		{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_AES_256_GMAC_V2},
+	}
+	allPrfTransforms = []Transform{
+		{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_AES128_CMAC_V2},
+		{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_512_V2},
+		{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_384_V2},
+		{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_256_V2},
+		{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_AES128_XCBC_V2},
+		{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_TIGER_V2},
+		{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA1_V2},
+		{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_MD5_V2},
+	}
+	allEncTransforms = []Transform{
+		{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
+		{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
+		{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
+		// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
+		// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
+		// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
+		// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
+		// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
+		// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
+		// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
+		// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
+		// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
+		// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_DES_V2},
+		{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_3DES_V2},
+	}
+	allAuthEncTransforms = []Transform{ // Authenticated encryption
+		{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_GCM_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
+		{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_GCM_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
+		{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_GCM_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
+	}
+	allEsnTransforms = []Transform{ // ESN (Extended Sequence Numbers) are needed for ESP
+		{Type: EXTENDED_SEQUENCE_NUMBERS_V2, Id: NO_EXTENDED_SEQUENCE_NUMBERS_V2},
+		{Type: EXTENDED_SEQUENCE_NUMBERS_V2, Id: YES_EXTENDED_SEQUENCE_NUMBERS_V2},
+	}
+)
+
 // Initiator implements an IKE initiator.
 type Initiator struct {
 	*Conn
@@ -1191,7 +1267,26 @@ func (c *InitiatorConfig) MakeEAP() {
 			},
 			},
 		}
-		c.ESPProposals = c.Proposals // TODO: for now, later use a broader one
+		// Combined-mode ciphers include
+		// both integrity and encryption in a single encryption algorithm, and
+		// MUST either offer no integrity algorithm or a single integrity
+		// algorithm of "NONE", with no integrity algorithm being the
+		// RECOMMENDED method.
+		// https://datatracker.ietf.org/doc/html/rfc7296#section-3.3
+		c.ESPProposals = []Proposal{
+			{ProposalNum: 1, Transforms: concatTransforms(
+				allAuthEncTransforms,
+				// []Transform{ // No integrity algorithm is recommended
+				// 	{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_NONE_V2},
+				// },
+				allEsnTransforms,
+			)},
+			{ProposalNum: 2, Transforms: concatTransforms(
+				allEncTransforms,
+				allIntegrityTransforms,
+				allEsnTransforms,
+			)},
+		}
 	}
 }
 
@@ -1268,88 +1363,20 @@ func (c *InitiatorConfig) MakeALL() {
 			{ProposalNum: 1, Transforms: c.AllTransforms},
 		}
 	} else {
-		dhGroupTransforms := []Transform{
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_768_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1536_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_3072_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_4096_V2},
-			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_6144_V2}, // Will make UDP payload too big causing crashes
-			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_8192_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_S160_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S224_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S256_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_192_ECP_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_224_ECP_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_ECP_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_384_ECP_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_521_ECP_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_224_BRAINPOOL_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_BRAINPOOL_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_384_BRAINPOOL_V2},
-			{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_512_BRAINPOOL_V2},
-		}
-		integrityTransforms := []Transform{
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_512_256_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_384_192_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_256_128_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA1_96_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_MD5_96_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_DES_MAC_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_KPDK_MD5_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_AES_XCBC_96_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_MD5_128_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA1_160_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_AES_CMAC_96_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_AES_128_GMAC_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_AES_192_GMAC_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_AES_256_GMAC_V2},
-		}
-		prfTransforms := []Transform{
-			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_AES128_CMAC_V2},
-			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_512_V2},
-			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_384_V2},
-			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_256_V2},
-			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_AES128_XCBC_V2},
-			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_TIGER_V2},
-			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA1_V2},
-			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_MD5_V2},
-		}
-		encTransforms := []Transform{
-			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
-			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
-			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_CAMELLIA_CTR_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_DES_V2},
-			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_3DES_V2},
-		}
 		c.Proposals = []Proposal{
 			{ProposalNum: 1, Transforms: concatTransforms(
-				[]Transform{
-					{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_GCM_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
-					{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_GCM_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
-					{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_GCM_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
-				},
-				prfTransforms,
+				allAuthEncTransforms,
+				allPrfTransforms,
 				[]Transform{
 					{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_NONE_V2},
 				},
-				dhGroupTransforms,
+				allDhGroupTransforms,
 			)},
 			{ProposalNum: 2, Transforms: concatTransforms(
-				encTransforms,
-				prfTransforms,
-				integrityTransforms,
-				dhGroupTransforms,
+				allEncTransforms,
+				allPrfTransforms,
+				allIntegrityTransforms,
+				allDhGroupTransforms,
 			)},
 		}
 	}
