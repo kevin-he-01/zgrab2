@@ -539,7 +539,7 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 
 		// Check if response contains an error notification and abort. Many implementations have invalid SPIs for this, so put it before the SPI check.
 		if err = response.containsErrorNotification(); err != nil {
-			config.ConnLog.ErrorNotification = response.MakeLog()
+			config.ConnLog.ErrorNotification = log
 			return
 		}
 
@@ -596,9 +596,17 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 				config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
 				err = fmt.Errorf("Received IKE_AUTH packet before IKE_SA_INIT")
 			}
-			err = response.processResponderAuth(log, config)
+			var decMsg *ikeMessage
+			decMsg, err = response.processResponderAuth(log, config)
 			if err != nil {
 				return
+			}
+			if decMsg != nil {
+				if err = decMsg.containsErrorNotification(); err != nil {
+					config.ConnLog.ErrorNotification = decMsg.MakeLog()
+					return
+				}
+				config.ConnLog.ResponderAuth = decMsg.MakeLog()
 			}
 		default:
 			// unexpected message

@@ -256,8 +256,8 @@ func (p *ikeMessage) decrypt(firstPayload uint8, plaintextPayloads []byte) error
 // Expect the message to be either encrypted, or an encrypted fragment
 // Set connLog.ResponderAuth (with decrypted data) when all fragments are received
 // Return error if something goes wrong
-// May mutate p to become the decrypted message
-func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorConfig) (err error) {
+// May (not guaranteed since there can be fragments) mutate p to become the decrypted message
+func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorConfig) (decryptedMsg *ikeMessage, err error) {
 	connLog := config.ConnLog
 	if len(p.payloads) == 0 {
 		err = fmt.Errorf("IKE_AUTH response contains no payloads")
@@ -282,7 +282,8 @@ func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorCon
 		if err != nil {
 			return
 		}
-		connLog.ResponderAuth = p.MakeLog()
+		decryptedMsg = p
+		// connLog.ResponderAuth = p.MakeLog()
 	case ENCRYPTED_AND_AUTHENTICATED_FRAGMENT_V2:
 		body := lastPayload.body.(*payloadFragmentV2)
 		log.Debugf("Received encrypted fragment: %d/%d", body.fragNum, body.totalFrags)
@@ -329,7 +330,8 @@ func (p *ikeMessage) processResponderAuth(mLog *IkeMessage, config *InitiatorCon
 			if err != nil {
 				return
 			}
-			connLog.ResponderAuth = skeleton.MakeLog()
+			decryptedMsg = skeleton
+			// connLog.ResponderAuth = skeleton.MakeLog()
 		}
 	default:
 		err = fmt.Errorf("IKE_AUTH response is not encrypted")
