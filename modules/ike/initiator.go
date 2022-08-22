@@ -503,6 +503,17 @@ func (c *Conn) initiatorHandshakeV2(config *InitiatorConfig) (err error) {
 	return
 }
 
+func guessResponseOrigin(r *ikeMessage) string {
+	switch r.hdr.messageId {
+	case MID_IKE_SA_INIT:
+		return "responder_ike_sa_init"
+	case MID_IKE_AUTH:
+		return "responder_ike_auth"
+	default:
+		return "unknown"
+	}
+}
+
 func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 
 	// Send IKE_SA_INIT
@@ -522,6 +533,7 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 		if err != nil {
 			return
 		}
+		origin := guessResponseOrigin(response)
 		log := response.MakeLog()
 
 		// Check if response contains an INVALID_KE_PAYLOAD request. If so, initiate another handshake with the requested group.
@@ -539,6 +551,7 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 
 		// Check if response contains an error notification and abort. Many implementations have invalid SPIs for this, so put it before the SPI check.
 		if err = response.containsErrorNotification(); err != nil {
+			config.ConnLog.ErrorOrigin = origin
 			config.ConnLog.ErrorNotification = log
 			return
 		}
@@ -603,6 +616,7 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 			}
 			if decMsg != nil {
 				if err = decMsg.containsErrorNotification(); err != nil {
+					config.ConnLog.ErrorOrigin = origin
 					config.ConnLog.ErrorNotification = decMsg.MakeLog()
 					return
 				}
