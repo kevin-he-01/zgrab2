@@ -26,7 +26,7 @@ type Flags struct {
 	// IKEv1 Mode ("aggressive" or "main")
 	ModeV1 string `long:"ike-mode-v1" default:"aggressive" description:"Specify \"main\" or \"aggressive\" mode for IKEv1."`
 	// Diffie-Hellman group to send in the initiator key exchange message
-	DHGroup string `long:"ike-dh-group" default:"14" description:"The Diffie-Hellman group to be sent in the key exchange payload. 2: DH1024, 14: DH2048"`
+	DHGroup string `long:"ike-dh-group" default:"2" description:"The Diffie-Hellman group to be sent in the key exchange payload. 2: DH1024, 14: DH2048"`
 	// ALL: Encryption algorithms
 	ProposeEncAlgs string `long:"ike-enc" default:"des,3des,aes128,aes256" description:"Comma separated list of encryption algorithms to send in payload with builtin ALL"`
 	// ALL: Hash algorithms

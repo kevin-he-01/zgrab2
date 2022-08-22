@@ -1241,31 +1241,34 @@ func (c *InitiatorConfig) MakeEAP() {
 	} else {
 		// For now, only support AES-CBC-256/SHA1/DH1024
 		c.ConnLog.Crypto.DHExponential = groupExpMap[c.DHGroup]
+		transforms := []Transform{
+			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
+			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
+			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
+			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_3DES_V2},
+			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_512_V2},
+			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_384_V2},
+			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_256_V2},
+			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA1_V2},
+			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_MD5_V2},
+			// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_512_256_V2},
+			// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_384_192_V2},
+			// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_256_128_V2},
+			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA1_96_V2},
+			// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_MD5_96_V2},
+			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_V2},
+			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_V2},
+			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_S160_V2},
+			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S224_V2},
+			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S256_V2},
+			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_ECP_V2},
+			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_BRAINPOOL_V2},
+		}
+		for _, group := range supportedGroupList {
+			transforms = append(transforms, Transform{Type: DIFFIE_HELLMAN_GROUP_V2, Id: group})
+		}
 		c.Proposals = []Proposal{
-			{ProposalNum: 1, Transforms: []Transform{
-				{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
-				// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
-				// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
-				// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_3DES_V2},
-				// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_512_V2},
-				// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_384_V2},
-				// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_256_V2},
-				{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA1_V2},
-				// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_MD5_V2},
-				// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_512_256_V2},
-				// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_384_192_V2},
-				// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_256_128_V2},
-				{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA1_96_V2},
-				// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_MD5_96_V2},
-				{Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_V2},
-				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_V2},
-				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_S160_V2},
-				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S224_V2},
-				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_S256_V2},
-				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_ECP_V2},
-				// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_BRAINPOOL_V2},
-			},
-			},
+			{ProposalNum: 1, Transforms: transforms},
 		}
 		// Combined-mode ciphers include
 		// both integrity and encryption in a single encryption algorithm, and
@@ -1891,7 +1894,9 @@ func (c *InitiatorConfig) SetConfig() error {
 		c.DHGroup = DH_1024_V1
 		c.MakeBASELINE()
 	case "EAP":
-		c.DHGroup = DH_1024_V1
+		if (!isGroupSupported(c.DHGroup)) {
+			zlog.Fatalf("Unsupported Diffie Hellman group specified in --ike-dh-group")
+		}
 		c.ConnLog.Crypto = new(CryptoInfo)
 		c.MakeEAP()
 	case "FORTIGATE":
