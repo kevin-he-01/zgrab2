@@ -34,7 +34,7 @@ type Flags struct {
 	// ALL: Authentication methods
 	ProposeAuthMethods string `long:"ike-auth" default:"psk,rsa_sig" description:"Comma separated list of authentication methods to send in payload with builtin ALL"`
 	// ALL: Groups
-	ProposeGroups string `long:"ike-group" default:"modp768,modp1024,modp1536,modp2048" description:"Comma separated list of groups to send in payload with builtin ALL"`
+	ProposeGroups string `long:"ike-all-groups" default:"modp768,modp1024,modp1536,modp2048" description:"Comma separated list of groups to send in payload with builtin ALL"`
 	// NthRound int `long:"ike-nth-round" default:"0" description:"If not 0, send the nth round of proposals (since there can be more than 127 proposals for safety)"`
 	// BuiltIn specifies a built-in configuration that may overwrite other command-line options.
 	Nonce string `long:"ike-nonce" default:"000102030405060708090a0b0c0d0e0f10111213" description:"Initiator nonce value to send in hex"`

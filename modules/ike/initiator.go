@@ -614,15 +614,20 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 
 		// Check if response contains an INVALID_KE_PAYLOAD request. If so, initiate another handshake with the requested group.
 		if dhGroup := response.containsInvalidKEPayload(); dhGroup != 0 {
-			panic("TODO: this is put on hold for now")
-			// config.DHGroup = dhGroup
+			zlog.Debugf("config.DHGroup = %d guess is wrong, host requested %d instead", config.DHGroup, dhGroup)
+			if !isGroupSupported(dhGroup) {
+				// Should not happen for hosts adhering to RFC
+				err = fmt.Errorf("Responder chooses a group (%d) not requested in SAi in INVALID_KE_PAYLOAD", dhGroup)
+				return
+			}
+			config.setDHGroup(dhGroup)
 
-			// if _, ok := groupKexMap[config.DHGroup]; !ok {
-			// 	err = fmt.Errorf("Unsupported Diffie-Hellman group %d requested on INVALID_KE_PAYLOAD", config.DHGroup)
-			// 	return
-			// }
+			if _, ok := groupKexMap[config.DHGroup]; !ok {
+				err = fmt.Errorf("Unsupported Diffie-Hellman group %d requested on INVALID_KE_PAYLOAD", config.DHGroup)
+				return
+			}
 
-			// return c.initiatorHandshakeV2(config)
+			return c.initiatorHandshakeV2EAP(config)
 		}
 
 		// Check if response contains an error notification and abort. Many implementations have invalid SPIs for this, so put it before the SPI check.
@@ -1239,8 +1244,6 @@ func (c *InitiatorConfig) MakeEAP() {
 	if c.Version == VersionIKEv1 {
 		panic("EAP not supported for IKEv1")
 	} else {
-		// For now, only support AES-CBC-256/SHA1/DH1024
-		c.ConnLog.Crypto.DHExponential = groupExpMap[c.DHGroup]
 		transforms := []Transform{
 			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
 			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
@@ -1894,10 +1897,11 @@ func (c *InitiatorConfig) SetConfig() error {
 		c.DHGroup = DH_1024_V1
 		c.MakeBASELINE()
 	case "EAP":
+		c.ConnLog.Crypto = new(CryptoInfo)
 		if (!isGroupSupported(c.DHGroup)) {
 			zlog.Fatalf("Unsupported Diffie Hellman group specified in --ike-dh-group")
 		}
-		c.ConnLog.Crypto = new(CryptoInfo)
+		c.setDHGroup(c.DHGroup)
 		c.MakeEAP()
 	case "FORTIGATE":
 		c.DHGroup = DH_1536_V1

@@ -2,7 +2,6 @@ package ike
 
 import (
 	"crypto/rand"
-	"math/big"
 	"io"
 )
 
@@ -799,11 +798,3 @@ var groupKexMap = map[uint16][]byte{
 	DH_EC2N_GP_185_V1:   KEX_DH_EC2N_GP_185,
 	DH_CURVE25519_V2:    KEX_DH_CURVE25519,
 }
-
-var deadbeef = big.NewInt(0xdeadbeef)
-
-var groupExpMap = map[uint16] *big.Int{
-	DH_768_V1: new(big.Int).Lsh(deadbeef, 768),
-	DH_1024_V1: new(big.Int).Lsh(deadbeef, 1024),
-	DH_2048_V1: new(big.Int).Lsh(deadbeef, 2048),
-};
