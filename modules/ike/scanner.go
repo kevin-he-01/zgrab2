@@ -42,6 +42,7 @@ type Flags struct {
 	Identity string `long:"ike-identity" default:"email:research-scan@sysnet.ucsd.edu" description:"The identity. See https://docs.strongswan.org/docs/5.9/config/identityParsing.html for parsing rules"`
 	ProbeFile string `long:"ike-probe-file" default:"" description:"Write the initial initiator packet to file and exit. (This is useful for creating zmap probes.)"`
 	NoFragment bool `long:"ike-no-fragment" description:"Turn off fragmentation support. Will not send a NOTIFY payload with IKEV2_FRAGMENTATION_SUPPORTED"`
+	RestrictDHGroup bool `long:"eap-restrict-group" description:"Only propose the DH group specified by --ike-dh-group in EAP mode, to reduce round trips caused by INVALID_KE_PAYLOAD"`
 }
 
 type Scanner struct {
@@ -159,6 +160,13 @@ func (s *Scanner) Init(flags zgrab2.ScanFlags) error {
 		log.Infof("Initial DH Group: %d", s.groupNum)
 		log.Infof("IKE identity: %s", f.Identity)
 		log.Infof("IKE Built-in: %s", f.BuiltIn)
+		if f.BuiltIn == "EAP" {
+			if f.RestrictDHGroup {
+				log.Infof("EAP: Group proposal restricted to initial DH group (%d)", s.groupNum)
+			} else {
+				log.Info("EAP: Group not restricted. Propose all supported groups")
+			}
+		}
 		log.Infof("IKE Nonce (hex): %s", f.Nonce)
 		log.Infof("IKE Nonce length: %d bytes", len(f.Nonce) / 2) // 2 hex digit = 1 byte
 		log.SetLevel(log.DebugLevel)
@@ -219,6 +227,7 @@ func (s *Scanner) ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret.ProbeFile = flags.ProbeFile
 	ret.NonceData = s.nonce
 	ret.NoFragment = flags.NoFragment
+	ret.RestrictDHGroup = flags.RestrictDHGroup
 	return ret
 }
 

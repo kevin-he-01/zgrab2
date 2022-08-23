@@ -182,6 +182,9 @@ type InitiatorConfig struct {
 
 	NoFragment bool
 
+	// Used in EAP
+	RestrictDHGroup bool
+
 	//// Misc connection states
 
 	// Responder nonce and key exchange
@@ -1273,8 +1276,13 @@ func (c *InitiatorConfig) MakeEAP() {
 			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_ECP_V2},
 			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_BRAINPOOL_V2},
 		}
-		for _, group := range supportedGroupList {
-			transforms = append(transforms, Transform{Type: DIFFIE_HELLMAN_GROUP_V2, Id: group})
+		if c.RestrictDHGroup {
+			// Only propose the initial group if c.RestrictDHGroup is on
+			transforms = append(transforms, Transform{Type: DIFFIE_HELLMAN_GROUP_V2, Id: c.DHGroup})
+		} else {
+			for _, group := range supportedGroupList {
+				transforms = append(transforms, Transform{Type: DIFFIE_HELLMAN_GROUP_V2, Id: group})
+			}
 		}
 		c.Proposals = []Proposal{
 			{ProposalNum: 1, Transforms: transforms},
