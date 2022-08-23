@@ -17,6 +17,7 @@ type CryptoInfo struct {
 	SK_er []byte `json:"sk_er,omitempty"`
 	SK_pi []byte `json:"sk_pi,omitempty"`
 	SK_pr []byte `json:"sk_pr,omitempty"`
+	ResponderSignedOctets []byte `json:"signed_octets,omitempty"`
 }
 
 type HandshakeLog struct {
@@ -45,7 +46,7 @@ type HandshakeLog struct {
 	ErrorNotification *IkeMessage   `json:"error_notification,omitempty"`
 	Unexpected        []*IkeMessage `json:"unexpected_messages,omitempty"`
 	Retransmit        []*IkeMessage `json:"retransmits,omitempty"`
-	ErrorOrigin string `json:"error_origin,omitempty"` // Origin (JSON tag name) of error_notification log (Limitation: only exist in EAP scans, where this might be ambiguous)
+	ErrorOrigin       string        `json:"error_origin,omitempty"` // Origin (JSON tag name) of error_notification log (Limitation: only exist in EAP scans, where this might be ambiguous)
 
 	Crypto *CryptoInfo `json:"crypto,omitempty"`
 }

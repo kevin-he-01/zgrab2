@@ -10,7 +10,7 @@ import (
 	"io"
 )
 
-const MAX_ITER = 10; // FIXME: Should be 256 for correctness, but can be slow. More optimized solution exist (require implementing custom io.Reader)
+const MAX_ITER = 10 // FIXME: Should be 256 for correctness, but can be slow. More optimized solution exist (require implementing custom io.Reader)
 
 func prfPlus(key []byte, data []byte, h func() hash.Hash) io.Reader {
 	var tPrev []byte
@@ -72,14 +72,27 @@ func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) {
 	crypto.SK_pr = genBytes(keyStream, prfLength)
 }
 
+// https://datatracker.ietf.org/doc/html/rfc7296#section-2.15
+func (c *InitiatorConfig) getSignedOctets(idr *payloadIdentification) (signedOctets []byte) {
+	// ResponderSignedOctets = RealMessage2 | NonceIData | MACedIDForR
+	signedOctets = append(signedOctets, c.ConnLog.ResponderSAInit.Raw...) // RealMessage2
+	signedOctets = append(signedOctets, c.NonceData...)                   // NonceIData
+	restOfRespIDPayload := idr.marshal()
+	// MACedIDForR = prf(SK_pr, restOfRespIDPayload)
+	prf := hmac.New(c.prfFunc, c.ConnLog.Crypto.SK_pr)
+	prf.Write(restOfRespIDPayload)
+	signedOctets = prf.Sum(signedOctets)
+	return
+}
+
 func (c *InitiatorConfig) getCiphertextLength(plaintextLength int) int {
-	return plaintextLength - plaintextLength % c.blockSize + c.blockSize
+	return plaintextLength - plaintextLength%c.blockSize + c.blockSize
 }
 
 func ikePad(pt []byte, bs int) []byte {
 	// IKE specific padding scheme
 	length := len(pt)
-	padLength := bs - 1 - length % bs
+	padLength := bs - 1 - length%bs
 	padding := make([]byte, padLength)
 	pt = append(pt, padding...)
 	pt = append(pt, byte(padLength))
@@ -91,12 +104,12 @@ func ikeUnpad(padded []byte) (err error, unpadded []byte) {
 		err = fmt.Errorf("Padded message has zero length")
 		return
 	}
-	padLength := padded[len(padded) - 1]
+	padLength := padded[len(padded)-1]
 	if int(padLength) >= len(padded) {
 		err = fmt.Errorf("Padding length is not strictly less than message length")
 		return
 	}
-	unpadded = padded[:len(padded) - 1 - int(padLength)]
+	unpadded = padded[:len(padded)-1-int(padLength)]
 	return
 }
 
@@ -129,7 +142,7 @@ func (c *InitiatorConfig) encryptAndDigest(iv []byte, associatedData []byte, pla
 	// copy(ciphertext, bytes.Repeat([]byte{0xcc}, c.getCiphertextLength(len(plaintext)))) // round up to block size
 	aesCbcEncrypt(crypto.SK_ei, iv, plaintext, ciphertext)
 	// return bytes.Repeat([]byte{0x55}, c.integChecksumLength)
-	
+
 	// Integrity tag
 	// Need to MAC associatedData + iv + ciphertext in non GCM mode
 	prf := hmac.New(c.integFunc, crypto.SK_ai)
@@ -140,13 +153,13 @@ func (c *InitiatorConfig) encryptAndDigest(iv []byte, associatedData []byte, pla
 }
 
 func (c *InitiatorConfig) decrypt(enc []byte) (err error, pt []byte) {
-	if len(enc) < c.encIVLength + c.integChecksumLength {
+	if len(enc) < c.encIVLength+c.integChecksumLength {
 		err = fmt.Errorf("Malformed encrypted payload. Message too short to fit just IV + checksum")
 		return
 	}
 	iv := enc[:c.encIVLength]
-	ctxt := enc[c.encIVLength:len(enc)-c.integChecksumLength]
-	if len(ctxt) % c.blockSize != 0 {
+	ctxt := enc[c.encIVLength : len(enc)-c.integChecksumLength]
+	if len(ctxt)%c.blockSize != 0 {
 		err = fmt.Errorf("Ciphertext is not a multiple of block size")
 		return
 	}

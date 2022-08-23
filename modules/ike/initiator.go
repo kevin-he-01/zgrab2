@@ -14,7 +14,7 @@ import (
 
 const (
 	MID_IKE_SA_INIT = 0
-	MID_IKE_AUTH = 1
+	MID_IKE_AUTH    = 1
 )
 
 var (
@@ -186,24 +186,24 @@ type InitiatorConfig struct {
 
 	// Responder nonce and key exchange
 	responderNonce []byte
-	responderKex []byte
+	responderKex   []byte
 
 	// Crypto parameters (depends on responder selected proposal)
-	prfFunc func() hash.Hash
-	prfKeyLength int // Preferred key length of selected PRF
-	integFunc func() hash.Hash
-	integKeyLength int // Key length for the selected integrity algorithm (0 for AUTH_NONE)
+	prfFunc             func() hash.Hash
+	prfKeyLength        int // Preferred key length of selected PRF
+	integFunc           func() hash.Hash
+	integKeyLength      int // Key length for the selected integrity algorithm (0 for AUTH_NONE)
 	integChecksumLength int // Length of checksum in encrypted payload
-	encKeyLength int // Length of key in chosen encryption algorithm
-	encIVLength int // Length of IV in encrypted payload
-	blockSize int // block size (always same as IV length???), allow pre-calculation of payload length
+	encKeyLength        int // Length of key in chosen encryption algorithm
+	encIVLength         int // Length of IV in encrypted payload
+	blockSize           int // block size (always same as IV length???), allow pre-calculation of payload length
 
 	// Flag to indicate everything is initialized (avoid nil pointer deference)
 	saInitComplete bool
 
 	// Fragments for IKE_AUTH received
-	numFragsReceived uint16
-	fragmentsReceived [][]byte
+	numFragsReceived     uint16
+	fragmentsReceived    [][]byte
 	firstFragmentMessage *ikeMessage
 }
 
@@ -389,7 +389,7 @@ func (c *Conn) buildInitiatorMainSA(config *InitiatorConfig) (msg *ikeMessage) {
 	msg.hdr.exchangeType = IDENTITY_PROTECTION_V1
 	msg.hdr.flags = 0
 	msg.hdr.messageId = MID_IKE_SA_INIT // Message ID
-	msg.hdr.length = IKE_HEADER_LEN // header + body
+	msg.hdr.length = IKE_HEADER_LEN     // header + body
 
 	// add payloads
 	payload1 := c.buildPayload(config, SECURITY_ASSOCIATION_V1)
@@ -702,6 +702,12 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 					return
 				}
 				config.ConnLog.ResponderAuth = decMsg.MakeLog()
+				idr := decMsg.getResponderIdPayload()
+				if idr == nil {
+					err = fmt.Errorf("Cannot find IDr payload in IKE_AUTH")
+					return
+				}
+				config.ConnLog.Crypto.ResponderSignedOctets = config.getSignedOctets(idr)
 			}
 		default:
 			// unexpected message
@@ -720,7 +726,7 @@ func (c *Conn) buildInitiatorSAInit(config *InitiatorConfig) (msg *ikeMessage) {
 	msg.hdr.majorVersion = VersionIKEv2
 	msg.hdr.minorVersion = 0
 	msg.hdr.exchangeType = IKE_SA_INIT_V2
-	msg.hdr.flags = 0x08            // flags (bit 3 set)
+	msg.hdr.flags = 0x08                // flags (bit 3 set)
 	msg.hdr.messageId = MID_IKE_SA_INIT // Message ID
 	// msg.hdr.length = IKE_HEADER_LEN // header + body
 
@@ -757,7 +763,7 @@ func (c *Conn) buildInitiatorAuth(config *InitiatorConfig) (msg *ikeMessage) {
 	msg.hdr.majorVersion = VersionIKEv2
 	msg.hdr.minorVersion = 0
 	msg.hdr.exchangeType = IKE_AUTH_V2
-	msg.hdr.flags = 0x08            // flags (bit 3 set)
+	msg.hdr.flags = 0x08             // flags (bit 3 set)
 	msg.hdr.messageId = MID_IKE_AUTH // Message ID
 
 	payload1 := c.buildPayload(config, IDENTIFICATION_INITIATOR_V2)
@@ -1295,7 +1301,6 @@ func (c *InitiatorConfig) MakeEAP() {
 		}
 	}
 }
-
 
 func (c *InitiatorConfig) GetTransformsFor(authMethod uint16) []Transform {
 	dhGroup := c.DHGroup
@@ -1898,7 +1903,7 @@ func (c *InitiatorConfig) SetConfig() error {
 		c.MakeBASELINE()
 	case "EAP":
 		c.ConnLog.Crypto = new(CryptoInfo)
-		if (!isGroupSupported(c.DHGroup)) {
+		if !isGroupSupported(c.DHGroup) {
 			zlog.Fatalf("Unsupported Diffie Hellman group specified in --ike-dh-group")
 		}
 		c.setDHGroup(c.DHGroup)

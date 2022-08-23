@@ -204,6 +204,19 @@ func (p *ikeMessage) getResponderDHGroup() uint16 {
 	return 0
 }
 
+// Extract responder DH group from Security Association message
+func (p *ikeMessage) getResponderIdPayload() *payloadIdentification {
+	for _, payload := range p.payloads {
+		switch payload.payloadType {
+		case IDENTIFICATION_RESPONDER_V2:
+			if pa, ok := payload.body.(*payloadIdentification); ok {
+				return pa
+			}
+		}
+	}
+	return nil
+}
+
 func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 	kexFound := false
 	nonceFound := false
