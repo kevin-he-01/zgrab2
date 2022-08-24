@@ -1,7 +1,6 @@
 package ike
 
 import (
-	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
 	"fmt"
@@ -114,9 +113,9 @@ func ikeUnpad(padded []byte) (err error, unpadded []byte) {
 	return
 }
 
-func aesCbcEncrypt(key []byte, iv []byte, plaintext []byte, ciphertext []byte) {
+func cbcEncrypt(blockCipher func([]byte) (cipher.Block, error), key []byte, iv []byte, plaintext []byte, ciphertext []byte) {
 	plaintext = ikePad(plaintext, len(iv)) // block size must be same as IV length
-	block, err := aes.NewCipher(key)
+	block, err := blockCipher(key)
 	if err != nil {
 		panic(err)
 	}
@@ -124,8 +123,8 @@ func aesCbcEncrypt(key []byte, iv []byte, plaintext []byte, ciphertext []byte) {
 	mode.CryptBlocks(ciphertext, plaintext)
 }
 
-func aesCbcDecrypt(key []byte, iv []byte, ciphertext []byte) (error, []byte) {
-	block, err := aes.NewCipher(key)
+func cbcDecrypt(blockCipher func([]byte) (cipher.Block, error), key []byte, iv []byte, ciphertext []byte) (error, []byte) {
+	block, err := blockCipher(key)
 	if err != nil {
 		panic(err)
 	}
@@ -141,7 +140,7 @@ func (c *InitiatorConfig) encryptAndDigest(iv []byte, associatedData []byte, pla
 	// fmt.Printf("Associated data: %s\n", hex.EncodeToString(associatedData))
 	// fmt.Printf("Plaintext: %s\n", hex.EncodeToString(plaintext))
 	// copy(ciphertext, bytes.Repeat([]byte{0xcc}, c.getCiphertextLength(len(plaintext)))) // round up to block size
-	aesCbcEncrypt(crypto.SK_ei, iv, plaintext, ciphertext)
+	cbcEncrypt(c.blockCipher, crypto.SK_ei, iv, plaintext, ciphertext)
 	// return bytes.Repeat([]byte{0x55}, c.integChecksumLength)
 
 	// Integrity tag
@@ -165,6 +164,6 @@ func (c *InitiatorConfig) decrypt(enc []byte) (err error, pt []byte) {
 		return
 	}
 	// Don't check integrity checksum since security isn't important for scanning
-	err, pt = aesCbcDecrypt(c.ConnLog.Crypto.SK_er, iv, ctxt)
+	err, pt = cbcDecrypt(c.blockCipher, c.ConnLog.Crypto.SK_er, iv, ctxt)
 	return
 }

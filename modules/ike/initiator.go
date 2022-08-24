@@ -2,6 +2,7 @@ package ike
 
 import (
 	"bytes"
+	"crypto/cipher"
 	"errors"
 	"fmt"
 	"hash"
@@ -196,6 +197,7 @@ type InitiatorConfig struct {
 	responderKex   []byte
 
 	// Crypto parameters (depends on responder selected proposal)
+	blockCipher         func([]byte) (cipher.Block, error)
 	prfFunc             func() hash.Hash
 	prfKeyLength        int // Preferred key length of selected PRF
 	integFunc           func() hash.Hash
@@ -1050,6 +1052,13 @@ func uint16ToBytes(num uint16) []byte {
 	return []byte{uint8(num >> 8), uint8(num)}
 }
 
+func uint16FromBytes(by []byte) uint16 {
+	if len(by) != 2 {
+		panic("Bad length")
+	}
+	return uint16(by[0]) << 8 + uint16(by[1])
+}
+
 func (c *InitiatorConfig) MakeOPENBSD() {
 	if c.Version == VersionIKEv1 {
 		panic("not implemented")
@@ -1284,9 +1293,9 @@ func (c *InitiatorConfig) MakeEAP() {
 	} else {
 		transforms := []Transform{
 			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(256)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
-			// {Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_3DES_V2},
+			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(192)}}},
+			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_AES_CBC_V2, Attributes: []Attribute{{Type: KEY_LENGTH_V2, Value: uint16ToBytes(128)}}},
+			{Type: ENCRYPTION_ALGORITHM_V2, Id: ENCR_3DES_V2},
 			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_512_V2},
 			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_384_V2},
 			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_256_V2},

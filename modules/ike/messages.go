@@ -2,6 +2,8 @@ package ike
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/des"
 	"crypto/sha1"
 	"errors"
 	"fmt"
@@ -235,6 +237,7 @@ func (p *ikeMessage) getResponderIdPayload() *payloadIdentification {
 func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 	kexFound := false
 	nonceFound := false
+	var proposals []*proposalV2
 	for _, payload := range p.payloads {
 		switch payload.payloadType {
 		case KEY_EXCHANGE_V2:
@@ -247,24 +250,64 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 				config.responderNonce = pa.nonceData
 				nonceFound = true
 			}
+		case SECURITY_ASSOCIATION_V2:
+			if pa, ok := payload.body.(*payloadSecurityAssociationV2); ok {
+				proposals = pa.proposals
+			}
 		}
 	}
 	if !kexFound {
-		return fmt.Errorf("Key exchange payload not found")
+		return errors.New("Responder SA_INIT: Key exchange payload not found")
 	}
 	if !nonceFound {
-		return fmt.Errorf("Nonce payload not found")
+		return errors.New("Responder SA_INIT: Nonce payload not found")
 	}
-	// TODO: extract the selected cipher suite (HMAC,INTEGRITY,ENCRYPTION) from responder info
-	// For now, assume HMAC_SHA1_96 as integrity and SHA1 as PRF, and AES-256 as encryption algo
+	if proposals == nil {
+		return errors.New("Responder SA_INIT: Security association payload not found")
+	}
+	// TODO: extract the selected cipher suite (HMAC,INTEGRITY) from responder info
+	// For now, assume HMAC_SHA1_96 as integrity and SHA1 as PRF
+	if len(proposals) != 1 {
+		return errors.New("Responder SA_INIT: Length of responder proposal must be 1")
+	}
+	var encrTransform *transformV2
+	for _, transform := range proposals[0].transforms {
+		switch transform.transformType {
+		case ENCRYPTION_ALGORITHM_V2:
+			encrTransform = transform
+		}
+	}
+	if encrTransform == nil {
+		return errors.New("Responder SA_INIT: No encryption transform found")
+	}
+	switch encrTransform.transformId {
+	case ENCR_AES_CBC_V2:
+		var length uint16
+		for _, attribute := range encrTransform.attributes {
+			if attribute.attributeType == KEY_LENGTH_V2 {
+				length = uint16FromBytes(attribute.attributeValue)
+			}
+		}
+		if length != 128 && length != 192 && length != 256 {
+			return fmt.Errorf("Invalid AES key length %d", length)
+		}
+		config.blockCipher = aes.NewCipher
+		config.blockSize = 16
+		config.encKeyLength = int(length) / 8
+	case ENCR_3DES_V2:
+		config.blockCipher = des.NewTripleDESCipher
+		config.blockSize = 8
+		config.encKeyLength = 24 // EDE3, 3 * b = 24 bytes
+	default:
+		return fmt.Errorf("Unsupported encryption type %d", encrTransform.transformId)
+	}
+	config.encIVLength = config.blockSize
+
 	config.prfFunc = sha1.New
 	config.integFunc = sha1.New
 	config.prfKeyLength = 20
 	config.integKeyLength = 20
 	config.integChecksumLength = 12 // HMAC_SHA1_96 (notice size truncated to 96 bits or 12 bytes)
-	config.encIVLength = 16
-	config.blockSize = 16
-	config.encKeyLength = 32
 	return nil
 }
 
