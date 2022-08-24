@@ -1,21 +1,24 @@
 package ike
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
 	"fmt"
 	"hash"
-	"io"
 )
 
 const MAX_ITER = 10 // FIXME: Should be 256 for correctness, but can be slow. More optimized solution exist (require implementing custom io.Reader)
 
-func prfPlus(key []byte, data []byte, h func() hash.Hash) io.Reader {
+type prfPlusStream struct {
+	buffer []byte
+	curr int
+}
+
+func prfPlus(key []byte, data []byte, h func() hash.Hash, length int) *prfPlusStream {
 	var tPrev []byte
 	var buffer []byte
-	for i := 1; i < MAX_ITER; i++ {
+	for i := 1; len(buffer) < length; i++ {
 		prf := hmac.New(h, key)
 		tPrev = append(tPrev, data...)
 		tPrev = append(tPrev, byte(i))
@@ -23,19 +26,17 @@ func prfPlus(key []byte, data []byte, h func() hash.Hash) io.Reader {
 		tPrev = prf.Sum(nil)
 		buffer = append(buffer, tPrev...)
 	}
-	return bytes.NewReader(buffer)
+	return &prfPlusStream{
+		buffer: buffer,
+		curr: 0,
+	}
 }
 
-func genBytes(rdr io.Reader, nr int) (data []byte) {
-	data = make([]byte, nr)
-	n, err := rdr.Read(data)
-	if n < nr {
-		panic(fmt.Errorf("Expect %d bytes, got only %d", nr, n))
-	}
-	if err != nil {
-		panic(err)
-	}
-	return
+func (s *prfPlusStream) genBytes(nr int) []byte {
+	next := s.curr + nr
+	data := s.buffer[s.curr:next]
+	s.curr = next
+	return data
 }
 
 func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) {
@@ -62,14 +63,14 @@ func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) {
 	nonces = append(nonces, spii...)
 	nonces = append(nonces, spir...)
 
-	keyStream := prfPlus(skeyseed, nonces, prfFunc)
-	crypto.SK_d = genBytes(keyStream, prfLength)
-	crypto.SK_ai = genBytes(keyStream, integLength)
-	crypto.SK_ar = genBytes(keyStream, integLength)
-	crypto.SK_ei = genBytes(keyStream, encLength)
-	crypto.SK_er = genBytes(keyStream, encLength)
-	crypto.SK_pi = genBytes(keyStream, prfLength)
-	crypto.SK_pr = genBytes(keyStream, prfLength)
+	keyStream := prfPlus(skeyseed, nonces, prfFunc, prfLength + 2 * (integLength + encLength + prfLength))
+	crypto.SK_d  = keyStream.genBytes(prfLength)
+	crypto.SK_ai = keyStream.genBytes(integLength)
+	crypto.SK_ar = keyStream.genBytes(integLength)
+	crypto.SK_ei = keyStream.genBytes(encLength)
+	crypto.SK_er = keyStream.genBytes(encLength)
+	crypto.SK_pi = keyStream.genBytes(prfLength)
+	crypto.SK_pr = keyStream.genBytes(prfLength)
 }
 
 // https://datatracker.ietf.org/doc/html/rfc7296#section-2.15
