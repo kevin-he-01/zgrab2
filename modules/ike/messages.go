@@ -271,14 +271,20 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 		return errors.New("Responder SA_INIT: Length of responder proposal must be 1")
 	}
 	var encrTransform *transformV2
+	var prfTransform *transformV2
 	for _, transform := range proposals[0].transforms {
 		switch transform.transformType {
 		case ENCRYPTION_ALGORITHM_V2:
 			encrTransform = transform
+		case PSEUDORANDOM_FUNCTION_V2:
+			prfTransform = transform
 		}
 	}
 	if encrTransform == nil {
 		return errors.New("Responder SA_INIT: No encryption transform found")
+	}
+	if prfTransform == nil {
+		return errors.New("Responder SA_INIT: No PRF transform found")
 	}
 	switch encrTransform.transformId {
 	case ENCR_AES_CBC_V2:
@@ -289,7 +295,7 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 			}
 		}
 		if length != 128 && length != 192 && length != 256 {
-			return fmt.Errorf("Invalid AES key length %d", length)
+			return fmt.Errorf("Responder SA_INIT: Invalid AES key length %d", length)
 		}
 		config.blockCipher = aes.NewCipher
 		config.blockSize = 16
@@ -299,13 +305,19 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 		config.blockSize = 8
 		config.encKeyLength = 24 // EDE3, 3 * b = 24 bytes
 	default:
-		return fmt.Errorf("Unsupported encryption type %d", encrTransform.transformId)
+		return fmt.Errorf("Responder SA_INIT: Unsupported encryption type %d", encrTransform.transformId)
 	}
 	config.encIVLength = config.blockSize
 
-	config.prfFunc = sha1.New
+	var ok bool
+	// https://datatracker.ietf.org/doc/html/rfc7296#section-2.13: For PRFs based
+	// on the HMAC construction, the preferred key size is equal to the
+	// length of the output of the underlying hash function.
+	ok, config.prfFunc, config.prfKeyLength = getPrf(prfTransform.transformId)
+	if !ok {
+		return fmt.Errorf("Responder SA_INIT: Unsupported PRF type %d", prfTransform.transformId)
+	}
 	config.integFunc = sha1.New
-	config.prfKeyLength = 20
 	config.integKeyLength = 20
 	config.integChecksumLength = 12 // HMAC_SHA1_96 (notice size truncated to 96 bits or 12 bytes)
 	return nil

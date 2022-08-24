@@ -2,10 +2,8 @@ package ike
 
 import (
 	"bytes"
-	"crypto/cipher"
 	"errors"
 	"fmt"
-	"hash"
 	"net"
 	"strings"
 	"time"
@@ -197,10 +195,10 @@ type InitiatorConfig struct {
 	responderKex   []byte
 
 	// Crypto parameters (depends on responder selected proposal)
-	blockCipher         func([]byte) (cipher.Block, error)
-	prfFunc             func() hash.Hash
+	blockCipher         blockCipherCtor
+	prfFunc             hashCtor
 	prfKeyLength        int // Preferred key length of selected PRF
-	integFunc           func() hash.Hash
+	integFunc           hashCtor
 	integKeyLength      int // Key length for the selected integrity algorithm (0 for AUTH_NONE)
 	integChecksumLength int // Length of checksum in encrypted payload
 	encKeyLength        int // Length of key in chosen encryption algorithm
@@ -1299,7 +1297,7 @@ func (c *InitiatorConfig) MakeEAP() {
 			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_512_V2},
 			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_384_V2},
 			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA2_256_V2},
-			{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA1_V2},
+			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_SHA1_V2},
 			// {Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_HMAC_MD5_V2},
 			// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_512_256_V2},
 			// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_384_192_V2},
@@ -1321,6 +1319,9 @@ func (c *InitiatorConfig) MakeEAP() {
 			for _, group := range supportedGroupList {
 				transforms = append(transforms, Transform{Type: DIFFIE_HELLMAN_GROUP_V2, Id: group})
 			}
+		}
+		for prf := range prfMap {
+			transforms = append(transforms, Transform{Type: PSEUDORANDOM_FUNCTION_V2, Id: prf})
 		}
 		c.Proposals = []Proposal{
 			{ProposalNum: 1, Transforms: transforms},

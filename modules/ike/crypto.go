@@ -3,18 +3,49 @@ package ike
 import (
 	"crypto/cipher"
 	"crypto/hmac"
+	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"fmt"
 	"hash"
 )
 
-const MAX_ITER = 10 // FIXME: Should be 256 for correctness, but can be slow. More optimized solution exist (require implementing custom io.Reader)
+type blockCipherCtor = func([]byte) (cipher.Block, error)
+type hashCtor = func() hash.Hash
+
+type hashDescriptor struct {
+	ctor hashCtor
+	size int
+}
+
+var (
+	prfMap = map[uint16]hashDescriptor {
+		PRF_HMAC_MD5_V2: {md5.New, md5.Size},
+		PRF_HMAC_SHA1_V2: {sha1.New, sha1.Size},
+		PRF_HMAC_SHA2_256_V2: {sha256.New, sha256.Size},
+		PRF_HMAC_SHA2_384_V2: {sha512.New384, sha512.Size384},
+		PRF_HMAC_SHA2_512_V2: {sha512.New, sha512.Size},
+	}
+)
+
+func getPrf(prfTransformId uint16) (ok bool, ctor hashCtor, size int) {
+	var desc hashDescriptor
+	desc, ok = prfMap[prfTransformId]
+	if !ok {
+		return
+	}
+	ctor = desc.ctor
+	size = desc.size
+	return
+}
 
 type prfPlusStream struct {
 	buffer []byte
 	curr int
 }
 
-func prfPlus(key []byte, data []byte, h func() hash.Hash, length int) *prfPlusStream {
+func prfPlus(key []byte, data []byte, h hashCtor, length int) *prfPlusStream {
 	var tPrev []byte
 	var buffer []byte
 	for i := 1; len(buffer) < length; i++ {
@@ -113,7 +144,7 @@ func ikeUnpad(padded []byte) (err error, unpadded []byte) {
 	return
 }
 
-func cbcEncrypt(blockCipher func([]byte) (cipher.Block, error), key []byte, iv []byte, plaintext []byte, ciphertext []byte) {
+func cbcEncrypt(blockCipher blockCipherCtor, key []byte, iv []byte, plaintext []byte, ciphertext []byte) {
 	plaintext = ikePad(plaintext, len(iv)) // block size must be same as IV length
 	block, err := blockCipher(key)
 	if err != nil {
@@ -123,7 +154,7 @@ func cbcEncrypt(blockCipher func([]byte) (cipher.Block, error), key []byte, iv [
 	mode.CryptBlocks(ciphertext, plaintext)
 }
 
-func cbcDecrypt(blockCipher func([]byte) (cipher.Block, error), key []byte, iv []byte, ciphertext []byte) (error, []byte) {
+func cbcDecrypt(blockCipher blockCipherCtor, key []byte, iv []byte, ciphertext []byte) (error, []byte) {
 	block, err := blockCipher(key)
 	if err != nil {
 		panic(err)
