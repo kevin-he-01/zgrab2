@@ -187,6 +187,10 @@ type InitiatorConfig struct {
 
 	//// Misc connection states
 
+	// data received from the most recent N(COOKIE) payload.
+	// See https://datatracker.ietf.org/doc/html/rfc7296#section-2.6
+	cookie []byte
+
 	// Responder nonce and key exchange
 	responderNonce []byte
 	responderKex   []byte
@@ -615,6 +619,12 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 		origin := guessResponseOrigin(response)
 		log := response.MakeLog()
 
+		if cookie := response.containsCookie(); cookie != nil {
+			zlog.Debug("N(COOKIE) received. Retrying with cookie")
+			config.cookie = cookie
+			return c.initiatorHandshakeV2EAP(config)
+		}
+
 		// Check if response contains an INVALID_KE_PAYLOAD request. If so, initiate another handshake with the requested group.
 		if dhGroup := response.containsInvalidKEPayload(); dhGroup != 0 {
 			zlog.Debugf("config.DHGroup = %d guess is wrong, host requested %d instead", config.DHGroup, dhGroup)
@@ -735,6 +745,11 @@ func (c *Conn) buildInitiatorSAInit(config *InitiatorConfig) (msg *ikeMessage) {
 
 	// add payloads
 
+	if config.cookie != nil {
+		cookiePayload := buildNotifyCookie(config.cookie)
+		msg.payloads = append(msg.payloads, cookiePayload)
+	}
+
 	payload1 := c.buildPayload(config, SECURITY_ASSOCIATION_V2)
 	// payload1.nextPayload = KEY_EXCHANGE_V2
 	// msg.hdr.length += uint32(payload1.length)
@@ -848,6 +863,20 @@ func notifyFragmentationV2() (p *payload) {
 	// body.spi = nil
 	body.notifyType = IKEV2_FRAGMENTATION_SUPPORTED_V2
 	// body.notifyData = nil
+
+	p.body = body
+	return
+}
+
+func buildNotifyCookie(cookie []byte) (p *payload) {
+	p = new(payload)
+	p.payloadType = NOTIFY_V2
+
+	body := new(payloadNotifyV2)
+	// body.protocolId = 0
+	// body.spi = nil
+	body.notifyType = COOKIE_V2
+	body.notifyData = cookie
 
 	p.body = body
 	return

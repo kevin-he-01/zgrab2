@@ -158,6 +158,21 @@ func (p *ikeMessage) containsInvalidKEPayload() uint16 {
 	return 0
 }
 
+// Check if the message contains a COOKIE, and return the requested cookie
+func (p *ikeMessage) containsCookie() []byte {
+	for _, payload := range p.payloads {
+		switch payload.payloadType {
+		case NOTIFY_V2:
+			if pa, ok := payload.body.(*payloadNotifyV2); ok {
+				if pa.notifyType == COOKIE_V2 {
+					return pa.notifyData
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func (p *ikeMessage) containsErrorNotification() error {
 	// Check if this is a notification message
 	for _, payload := range p.payloads {
