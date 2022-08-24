@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/des"
-	"crypto/sha1"
 	"errors"
 	"fmt"
 
@@ -272,12 +271,15 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 	}
 	var encrTransform *transformV2
 	var prfTransform *transformV2
+	var integTransform *transformV2
 	for _, transform := range proposals[0].transforms {
 		switch transform.transformType {
 		case ENCRYPTION_ALGORITHM_V2:
 			encrTransform = transform
 		case PSEUDORANDOM_FUNCTION_V2:
 			prfTransform = transform
+		case INTEGRITY_ALGORITHM_V2:
+			integTransform = transform
 		}
 	}
 	if encrTransform == nil {
@@ -285,6 +287,9 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 	}
 	if prfTransform == nil {
 		return errors.New("Responder SA_INIT: No PRF transform found")
+	}
+	if integTransform == nil {
+		return errors.New("Responder SA_INIT: No integrity transform found")
 	}
 	switch encrTransform.transformId {
 	case ENCR_AES_CBC_V2:
@@ -317,9 +322,15 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 	if !ok {
 		return fmt.Errorf("Responder SA_INIT: Unsupported PRF type %d", prfTransform.transformId)
 	}
-	config.integFunc = sha1.New
-	config.integKeyLength = 20
-	config.integChecksumLength = 12 // HMAC_SHA1_96 (notice size truncated to 96 bits or 12 bytes)
+
+	// For integrity protection functions based on Hashed Message
+	// Authentication Code (HMAC), the fixed key size is the size of the
+	// output of the underlying hash function.
+	ok, config.integFunc, config.integKeyLength, config.integChecksumLength = getIntegAlg(integTransform.transformId)
+	if !ok {
+		return fmt.Errorf("Responder SA_INIT: Unsupported integrity algorithm %d", integTransform.transformId)
+	}
+
 	return nil
 }
 

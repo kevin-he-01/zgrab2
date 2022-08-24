@@ -1302,7 +1302,7 @@ func (c *InitiatorConfig) MakeEAP() {
 			// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_512_256_V2},
 			// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_384_192_V2},
 			// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA2_256_128_V2},
-			{Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA1_96_V2},
+			// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_SHA1_96_V2},
 			// {Type: INTEGRITY_ALGORITHM_V2, Id: AUTH_HMAC_MD5_96_V2},
 			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_1024_V2},
 			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_2048_V2},
@@ -1322,6 +1322,9 @@ func (c *InitiatorConfig) MakeEAP() {
 		}
 		for prf := range prfMap {
 			transforms = append(transforms, Transform{Type: PSEUDORANDOM_FUNCTION_V2, Id: prf})
+		}
+		for integ := range integAlgMap {
+			transforms = append(transforms, Transform{Type: INTEGRITY_ALGORITHM_V2, Id: integ})
 		}
 		c.Proposals = []Proposal{
 			{ProposalNum: 1, Transforms: transforms},

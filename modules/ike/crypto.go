@@ -19,6 +19,12 @@ type hashDescriptor struct {
 	size int
 }
 
+type integAlgDescriptor struct {
+	ctor hashCtor
+	hashSize int
+	checksumSize int
+}
+
 var (
 	prfMap = map[uint16]hashDescriptor {
 		PRF_HMAC_MD5_V2: {md5.New, md5.Size},
@@ -26,6 +32,15 @@ var (
 		PRF_HMAC_SHA2_256_V2: {sha256.New, sha256.Size},
 		PRF_HMAC_SHA2_384_V2: {sha512.New384, sha512.Size384},
 		PRF_HMAC_SHA2_512_V2: {sha512.New, sha512.Size},
+	}
+	integAlgMap = map[uint16]integAlgDescriptor {
+		AUTH_HMAC_MD5_96_V2: {md5.New, md5.Size, 96 / 8},
+		AUTH_HMAC_MD5_128_V2: {md5.New, md5.Size, 128 / 8},
+		AUTH_HMAC_SHA1_96_V2: {sha1.New, sha1.Size, 96 / 8},
+		AUTH_HMAC_SHA1_160_V2: {sha1.New, sha1.Size, 160 / 8},
+		AUTH_HMAC_SHA2_256_128_V2: {sha256.New, sha256.Size, 128 / 8},
+		AUTH_HMAC_SHA2_384_192_V2: {sha512.New384, sha512.Size384, 192 / 8},
+		AUTH_HMAC_SHA2_512_256_V2: {sha512.New, sha512.Size, 256 / 8},
 	}
 )
 
@@ -37,6 +52,18 @@ func getPrf(prfTransformId uint16) (ok bool, ctor hashCtor, size int) {
 	}
 	ctor = desc.ctor
 	size = desc.size
+	return
+}
+
+func getIntegAlg(integTransformId uint16) (ok bool, ctor hashCtor, size int, sumSize int) {
+	var desc integAlgDescriptor
+	desc, ok = integAlgMap[integTransformId]
+	if !ok {
+		return
+	}
+	ctor = desc.ctor
+	size = desc.hashSize
+	sumSize = desc.checksumSize
 	return
 }
 
