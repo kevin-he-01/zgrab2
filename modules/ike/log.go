@@ -7,17 +7,17 @@ import (
 )
 
 type CryptoInfo struct {
-	DHExponential *big.Int `json:"dh_exponent,omitempty"`
-	DHSharedSecret []byte `json:"dh_shared_secret,omitempty"`
-	SKEYSEED []byte `json:"skeyseed,omitempty"`
-	SK_d []byte `json:"sk_d,omitempty"`
-	SK_ai []byte `json:"sk_ai,omitempty"`
-	SK_ar []byte `json:"sk_ar,omitempty"`
-	SK_ei []byte `json:"sk_ei,omitempty"`
-	SK_er []byte `json:"sk_er,omitempty"`
-	SK_pi []byte `json:"sk_pi,omitempty"`
-	SK_pr []byte `json:"sk_pr,omitempty"`
-	ResponderSignedOctets []byte `json:"signed_octets,omitempty"`
+	DHExponential         *big.Int `json:"dh_exponent,omitempty"`
+	DHSharedSecret        []byte   `json:"dh_shared_secret,omitempty"`
+	SKEYSEED              []byte   `json:"skeyseed,omitempty"`
+	SK_d                  []byte   `json:"sk_d,omitempty"`
+	SK_ai                 []byte   `json:"sk_ai,omitempty"`
+	SK_ar                 []byte   `json:"sk_ar,omitempty"`
+	SK_ei                 []byte   `json:"sk_ei,omitempty"`
+	SK_er                 []byte   `json:"sk_er,omitempty"`
+	SK_pi                 []byte   `json:"sk_pi,omitempty"`
+	SK_pr                 []byte   `json:"sk_pr,omitempty"`
+	ResponderSignedOctets []byte   `json:"signed_octets,omitempty"`
 }
 
 type HandshakeLog struct {
@@ -36,10 +36,10 @@ type HandshakeLog struct {
 	ResponderSAInit *IkeMessage `json:"responder_ike_sa_init,omitempty"`
 
 	// IKEv2 IKE_AUTH
-	InitiatorAuth *IkeMessage `json:"initiator_ike_auth,omitempty"`
-	InitiatorAuthEncrypted *IkeMessage `json:"initiator_ike_auth_enc,omitempty"`
-	ResponderAuth *IkeMessage `json:"responder_ike_auth,omitempty"`
-	ResponderAuthEncrypted *IkeMessage `json:"responder_ike_auth_enc,omitempty"`
+	InitiatorAuth          *IkeMessage   `json:"initiator_ike_auth,omitempty"`
+	InitiatorAuthEncrypted *IkeMessage   `json:"initiator_ike_auth_enc,omitempty"`
+	ResponderAuth          *IkeMessage   `json:"responder_ike_auth,omitempty"`
+	ResponderAuthEncrypted *IkeMessage   `json:"responder_ike_auth_enc,omitempty"`
 	ResponderAuthFragments []*IkeMessage `json:"responder_ike_auth_frag,omitempty"` // (encrypted) fragments
 
 	// All
@@ -81,7 +81,7 @@ func (msg *IkeMessage) MarshalJSON() ([]byte, error) {
 		if pa, ok := p.(*Notify); ok {
 			aux = append(aux, *pa)
 		}
-		
+
 		if pa, ok := p.(*Certificate); ok {
 			aux = append(aux, *pa)
 		}
@@ -97,11 +97,14 @@ func (msg *IkeMessage) MarshalJSON() ([]byte, error) {
 		if pa, ok := p.(*Hash); ok {
 			aux = append(aux, *pa)
 		}
+		if pa, ok := p.(*EAP); ok {
+			aux = append(aux, *pa)
+		}
 
 		if pa, ok := p.(*EmptyPayload); ok {
 			aux = append(aux, *pa)
 		}
-		
+
 	}
 
 	aux2 := struct {
@@ -176,7 +179,7 @@ func (p *payload) MakeLog() Payload {
 		} else {
 			return pa.MakeLog()
 		}
-	
+
 	//    case CERTIFICATE_V1:
 	//        if pa, ok := p.body.(*payloadCertificate); !ok {
 	//            return new(EmptyPayload)
@@ -201,7 +204,7 @@ func (p *payload) MakeLog() Payload {
 		} else {
 			return pa.MakeLog()
 		}
-	
+
 	case NONCE_V1:
 		if pa, ok := p.body.(*payloadNonce); !ok {
 			return new(EmptyPayload)
@@ -248,7 +251,7 @@ func (p *payload) MakeLog() Payload {
 		} else {
 			return pa.MakeLog()
 		}
-	
+
 	case CERTIFICATE_V2:
 		if pa, ok := p.body.(*payloadCertificate); !ok {
 			return new(EmptyPayload)
@@ -267,7 +270,7 @@ func (p *payload) MakeLog() Payload {
 		} else {
 			return pa.MakeLog()
 		}
-	
+
 	case NONCE_V2:
 		if pa, ok := p.body.(*payloadNonce); !ok {
 			return new(EmptyPayload)
@@ -289,34 +292,40 @@ func (p *payload) MakeLog() Payload {
 		} else {
 			return pa.MakeLog()
 		}
+	case EXTENSIBLE_AUTHENTICATION_V2:
+		if pa, ok := p.body.(*payloadEAP); !ok {
+			return new(EmptyPayload)
+		} else {
+			return pa.MakeLog()
+		}
 	}
 	return new(EmptyPayload)
 }
 
 type Certificate struct {
-	Name      string     `json:"type,omitempty"`
-	Encoding  uint8      `json:"encoding,omitempty"`
-	CertData  []byte     `json:"data,omitempty"`
+	Name     string `json:"type,omitempty"`
+	Encoding uint8  `json:"encoding,omitempty"`
+	CertData []byte `json:"data,omitempty"`
 }
 
 type CertificateRequest struct {
-	Name      string     `json:"type,omitempty"`
-	Raw       []byte     `json:"raw,omitempty"`
-	Encoding  uint8      `json:"encoding,omitempty"`
-	CertAuth  []byte	 `json:"ca,omitempty"`
+	Name     string `json:"type,omitempty"`
+	Raw      []byte `json:"raw,omitempty"`
+	Encoding uint8  `json:"encoding,omitempty"`
+	CertAuth []byte `json:"ca,omitempty"`
 }
 
 type Hash struct {
-	Name      string     `json:"type,omitempty"`
-	Raw       []byte     `json:"raw,omitempty"`
-	HashData  []byte     `json:"data,omitempty"`
+	Name     string `json:"type,omitempty"`
+	Raw      []byte `json:"raw,omitempty"`
+	HashData []byte `json:"data,omitempty"`
 }
 
 type Authentication struct {
-	Name      string     `json:"type,omitempty"`
-	Raw       []byte     `json:"raw,omitempty"`
-	Method    uint8      `json:"method,omitempty"`
-	Data      []byte     `json:"data,omitempty"`
+	Name   string `json:"type,omitempty"`
+	Raw    []byte `json:"raw,omitempty"`
+	Method uint8  `json:"method,omitempty"`
+	Data   []byte `json:"data,omitempty"`
 }
 
 func (p *payloadCertificate) MakeLog() *Certificate {
@@ -457,9 +466,9 @@ func (p *payloadKeyExchangeV2) MakeLog() *KeyExchange {
 }
 
 type Signature struct {
-	Name            string `json:"type,omitempty"`
-	Raw             []byte `json:"raw,omitempty"`
-	SignatureData   []byte `json:"sig_data,omitempty"`
+	Name          string `json:"type,omitempty"`
+	Raw           []byte `json:"raw,omitempty"`
+	SignatureData []byte `json:"sig_data,omitempty"`
 }
 
 func (p *payloadSignatureV1) MakeLog() *Signature {
@@ -547,4 +556,24 @@ func (p *payloadNotifyV2) MakeLog() *Notify {
 	n.NotifyData = append(n.NotifyData, p.notifyData...)
 	n.Name = "notification"
 	return n
+}
+
+type EAP struct {
+	Name string `json:"type,omitempty"`
+	Raw  []byte `json:"raw,omitempty"`
+	Code uint8  `json:"code,omitempty"`
+	Id   uint8  `json:"id,omitempty"`
+	Type uint8  `json:"data_type,omitempty"`
+	Data []byte `json:"data,omitempty"`
+}
+
+func (p *payloadEAP) MakeLog() *EAP {
+	e := new(EAP)
+	e.Name = "eap"
+	e.Raw = p.raw
+	e.Code = p.code
+	e.Id = p.id
+	e.Type = p.dataType
+	e.Data = p.data
+	return e
 }

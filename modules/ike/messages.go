@@ -851,6 +851,12 @@ func (p *payload) unmarshal(data []byte) bool {
 		}
 	case CONFIGURATION_V2:
 	case EXTENSIBLE_AUTHENTICATION_V2:
+		pa := new(payloadEAP)
+		if ok := pa.unmarshal(p.raw[IKE_PAYLOAD_HEADER_LEN:]); !ok {
+			return false
+		} else {
+			p.body = pa
+		}
 	case GENERIC_SECURE_PASSWORD_METHOD_V2:
 	case GROUP_IDENTIFICATION_V2:
 	case GROUP_SECURITY_ASSOCIATION_V2:
@@ -1807,7 +1813,34 @@ type payloadConfiguration struct {
 	raw []byte
 }
 
-// not implemented
 type payloadEAP struct {
 	raw []byte
+	code uint8
+	id uint8
+	dataType uint8
+	data []byte
+}
+
+func (p *payloadEAP) marshal() (x []byte) {
+	panic("not implemented yet")
+}
+
+func (p *payloadEAP) unmarshal(data []byte) bool {
+	p.raw = append([]byte{}, data...)
+	if len(data) < 4 {
+		return false
+	}
+
+	p.code = data[0]
+	p.id = data[1]
+
+	if p.code != 1 && p.code != 2 {
+		return true // Not Request (1) or Response (2), so no Type and Data field
+	}
+	if len(data) < 5 {
+		return false
+	}
+	p.dataType = data[4]
+	p.data = data[5:]
+	return true
 }

@@ -9,3 +9,17 @@ zgrab2 ike --ike-version=2 --ike-builtin=ALL --ike-probe-file=udp-probe-v2-all.p
 zgrab2 ike --ike-version=1 --ike-mode-v1=main --ike-builtin=ALL --ike-auth=psk --ike-probe-file=udp-probe-v1-psk.pkt <<< localhost
 # IKEv1 ALL RSA in Main mode
 zgrab2 ike --ike-version=1 --ike-mode-v1=main --ike-builtin=ALL --ike-auth=rsa_sig --ike-probe-file=udp-probe-v1-rsa.pkt <<< localhost
+
+## Using the new, EAP supported zgrab2
+$ zgrab2 ike --ike-verbose --ike-probe-file=udp-probe-eap.pkt <<< localhost
+INFO[0000] CONFIGURATION:                               
+INFO[0000] IKE Version: 2                               
+INFO[0000] IKEv2: Report IKEV2_FRAGMENTATION_SUPPORTED  
+INFO[0000] Initial DH Group: 2                          
+INFO[0000] IKE identity: email:research-scan@sysnet.ucsd.edu 
+INFO[0000] IKE Built-in: EAP                            
+INFO[0000] EAP: Group not restricted. Propose all supported groups 
+INFO[0000] IKE Nonce (hex): 000102030405060708090a0b0c0d0e0f10111213 
+INFO[0000] IKE Nonce length: 20 bytes                   
+INFO[0000] started grab at 2022-08-24T20:54:57-07:00    
+INFO[0000] Wrote probe file and exiting...
