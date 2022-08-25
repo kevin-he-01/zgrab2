@@ -29,6 +29,7 @@ var (
 	}
 	deadbeef = big.NewInt(0xdeadbeef)
 	// Currently only stores the default exponent to use for each group, may change in future
+	bigIntOne = big.NewInt(1)
 	groupSupport = map[uint16]*big.Int{
 		DH_768_V2: new(big.Int).Lsh(deadbeef, 768),
 		DH_1024_V2: new(big.Int).Lsh(deadbeef, 1024),
@@ -36,6 +37,9 @@ var (
 		DH_2048_V2: new(big.Int).Lsh(deadbeef, 2048),
 		DH_3072_V2: new(big.Int).Lsh(deadbeef, 3072),
 		DH_4096_V2: new(big.Int).Lsh(deadbeef, 4096),
+		DH_256_ECP_V2: bigIntOne,
+		DH_384_ECP_V2: bigIntOne,
+		DH_521_ECP_V2: bigIntOne,
 	}
 	supportedGroupList []uint16
 )
@@ -68,6 +72,14 @@ func (c *InitiatorConfig) computeSharedSecret(responderKex []byte) (err error) {
 		c.dhModP(responderKex, 3072)
 	case DH_4096_V2:
 		c.dhModP(responderKex, 4096)
+	case DH_256_ECP_V2, DH_384_ECP_V2, DH_521_ECP_V2:
+		if len(responderKex) % 2 != 0 {
+			return fmt.Errorf("computeSharedSecret(): Length of responder kex value for ECDH is not even")
+		}
+		// https://www.rfc-editor.org/rfc/rfc5903.html#section-7
+		// The Diffie-Hellman shared secret value consists of the x value of the
+		// Diffie-Hellman common value.
+		c.ConnLog.Crypto.DHSharedSecret = responderKex[:len(responderKex)/2] // exponent 1, so just the identity function
 	default:
 		return fmt.Errorf("computeSecret(): Received unsupported DH group %d", c.DHGroup)
 	}
