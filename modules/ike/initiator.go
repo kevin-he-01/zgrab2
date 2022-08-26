@@ -183,6 +183,7 @@ type InitiatorConfig struct {
 
 	// Used in EAP
 	RestrictDHGroup bool
+	BetterHashes bool
 
 	//// Misc connection states
 
@@ -770,6 +771,11 @@ func (c *Conn) buildInitiatorSAInit(config *InitiatorConfig) (msg *ikeMessage) {
 		msg.payloads = append(msg.payloads, payloadFragmentation)
 	}
 
+	if config.BetterHashes {
+		payloadSignatureHashes := buildNotifySignatureHashFunctions()
+		msg.payloads = append(msg.payloads, payloadSignatureHashes)
+	}
+
 	return
 }
 
@@ -877,6 +883,21 @@ func buildNotifyCookie(cookie []byte) (p *payload) {
 	// body.spi = nil
 	body.notifyType = COOKIE_V2
 	body.notifyData = cookie
+
+	p.body = body
+	return
+}
+
+func buildNotifySignatureHashFunctions() (p *payload) {
+	p = new(payload)
+	p.payloadType = NOTIFY_V2
+
+	body := new(payloadNotifyV2)
+	// body.protocolId = 0
+	// body.spi = nil
+	body.notifyType = SIGNATURE_HASH_ALGORITHMS_V2
+	// https://www.iana.org/assignments/ikev2-parameters/ikev2-parameters.xhtml#hash-algorithms
+	body.notifyData = []byte("\x00\x01\x00\x02\x00\x03\x00\x04") // SHA1 and SHA2-256/384/512
 
 	p.body = body
 	return

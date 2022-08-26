@@ -42,7 +42,8 @@ type Flags struct {
 	Identity string `long:"ike-identity" default:"email:research-scan@sysnet.ucsd.edu" description:"The identity. See https://docs.strongswan.org/docs/5.9/config/identityParsing.html for parsing rules"`
 	ProbeFile string `long:"ike-probe-file" default:"" description:"Write the initial initiator packet to file and exit. (This is useful for creating zmap probes.)"`
 	NoFragment bool `long:"ike-no-fragment" description:"Turn off fragmentation support. Will not send a NOTIFY payload with IKEV2_FRAGMENTATION_SUPPORTED"`
-	RestrictDHGroup bool `long:"eap-restrict-group" description:"Only propose the DH group specified by --ike-dh-group in EAP mode, to reduce round trips caused by INVALID_KE_PAYLOAD"`
+	BetterHashes bool `long:"better-hashes" description:"Add a NOTIFY payload proposing a list of supported signature hashes"`
+	RestrictDHGroup bool `long:"restrict-group" description:"Only propose the DH group specified by --ike-dh-group in EAP mode, to reduce round trips caused by INVALID_KE_PAYLOAD"`
 }
 
 type Scanner struct {
@@ -228,6 +229,7 @@ func (s *Scanner) ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret.NonceData = s.nonce
 	ret.NoFragment = flags.NoFragment
 	ret.RestrictDHGroup = flags.RestrictDHGroup
+	ret.BetterHashes = flags.BetterHashes
 	return ret
 }
 
