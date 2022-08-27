@@ -94,6 +94,7 @@ func (p *ikeMessage) unmarshalPayloads(data []byte) bool {
 		pa := new(payload)
 		pa.payloadType = nextPayload
 		if ok := pa.unmarshal(data[curr:]); !ok {
+			log.Debugf("Unable to unmarshal payload of type %d at index %d", pa.payloadType, curr)
 			return false
 		}
 		p.payloads = append(p.payloads, pa)
@@ -101,7 +102,8 @@ func (p *ikeMessage) unmarshalPayloads(data []byte) bool {
 		nextPayload = pa.nextPayload
 	}
 
-	if curr != len(data) {
+	if curr > len(data) {
+		log.Debugf("Last payload length exceeds end of message")
 		return false
 	}
 
