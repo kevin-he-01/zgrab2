@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	ErrEchoServer = errors.New("Encountered echo server")
 	ErrNotificationV1 = errors.New("received error notification (V1)")
 	ErrNotificationV2 = errors.New("received error notification (V2)")
 )

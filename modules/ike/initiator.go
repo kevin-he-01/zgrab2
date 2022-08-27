@@ -624,6 +624,11 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 		origin := guessResponseOrigin(response)
 		log := response.MakeLog()
 
+		if bytes.Equal(response.raw, config.ConnLog.InitiatorSAInit.Raw) {
+			err = ErrEchoServer
+			return
+		}
+
 		if cookie := response.containsCookie(); cookie != nil {
 			zlog.Debug("N(COOKIE) received. Retrying with cookie")
 			config.cookie = cookie

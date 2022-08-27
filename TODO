@@ -2,6 +2,4 @@ Important ones
 - Log all the payloads (traffic selector is missing)
 
 Other
-- Check Flags and make sure responder bit is set to prevent parrots (echo services)
-  - or more simply just check raw contents against initial sa
 - Is N(EAP_ONLY_AUTHENTICATION) necessary?

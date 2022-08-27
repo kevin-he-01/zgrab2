@@ -11,6 +11,8 @@ import (
 	"github.com/zmap/zgrab2"
 )
 
+const SCAN_IKE_ECHO = zgrab2.ScanStatus("echo")
+
 // Module implements the zgrab2.Module interface.
 type Module struct {
 }
@@ -237,6 +239,8 @@ func TryGetScanStatus(err error) zgrab2.ScanStatus {
 	switch err {
 	case ErrNotificationV1, ErrNotificationV2:
 		return zgrab2.SCAN_APPLICATION_ERROR
+	case ErrEchoServer:
+		return SCAN_IKE_ECHO
 	default:
 		return zgrab2.TryGetScanStatus(err)
 	}
