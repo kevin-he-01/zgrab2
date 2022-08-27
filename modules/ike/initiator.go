@@ -961,14 +961,7 @@ func (c *Conn) buildPayloadSecurityAssociationV2(config *InitiatorConfig, esp bo
 	var espSpi []byte
 	if esp {
 		proposals = config.ESPProposals
-		espSpi = make([]byte, 4)
-		numRead, err := config.Rand.Read(espSpi)
-		if numRead != len(espSpi) {
-			panic("Unable to read enough bytes from random")
-		}
-		if err != nil {
-			panic(err)
-		}
+		espSpi = config.readRand(4)
 	}
 	for _, proposalConfig := range proposals {
 		p.proposals = append(p.proposals, buildProposalV2(proposalConfig, espSpi))

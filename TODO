@@ -1,6 +1,5 @@
 Important ones
 - Log all the payloads (traffic selector is missing)
-- Generate random ESP SPI
 
 Other
 - Check Flags and make sure responder bit is set to prevent parrots (echo services)

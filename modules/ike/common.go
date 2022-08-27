@@ -17,6 +17,18 @@ type Config struct {
 	ConnLog *HandshakeLog
 }
 
+func (c *Config) readRand(n int) (randData []byte) {
+	randData = make([]byte, n)
+	numRead, err := c.Rand.Read(randData)
+	if numRead != n {
+		panic("Unable to read enough bytes from random")
+	}
+	if err != nil {
+		panic(err)
+	}
+	return
+}
+
 // SetDefaults sets sensible values for unset fields in config.
 func (c *Config) SetDefaults() {
 	if c.Rand == nil {

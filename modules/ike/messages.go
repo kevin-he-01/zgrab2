@@ -1,7 +1,6 @@
 package ike
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/des"
 	"errors"
@@ -32,7 +31,7 @@ func (p *ikeMessage) encrypt(c *InitiatorConfig) {
 	
 	body := new(payloadEncrypted)
 	encPayload.body = body
-	body.iv = bytes.Repeat([]byte{0x42}, c.encIVLength) // TODO: generate random IV
+	body.iv = c.readRand(c.encIVLength)
 	ctxtLength := c.getCiphertextLength(len(plaintext))
 	// make dummy ciphertext and checksum just for length calculation
 	body.ciphertext = make([]byte, ctxtLength)
