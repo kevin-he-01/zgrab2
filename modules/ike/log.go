@@ -48,6 +48,8 @@ type HandshakeLog struct {
 	Retransmit        []*IkeMessage `json:"retransmits,omitempty"`
 	ErrorOrigin       string        `json:"error_origin,omitempty"` // Origin (JSON tag name) of error_notification log (Limitation: only exist in EAP scans, where this might be ambiguous)
 
+	UnparsableRaw []byte `json:"unparsable_raw,omitempty"` // Raw contents of unparsable messages
+
 	Crypto *CryptoInfo `json:"crypto,omitempty"`
 }
 

@@ -11,6 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var msgParseErr = errors.New("unable to parse ike message")
+
 type Conn struct {
 	// Underlying network connection
 	conn net.Conn
@@ -78,7 +80,7 @@ func (c *Conn) readMessage() (msg *ikeMessage, err error) {
 
 	msg = new(ikeMessage)
 	if ok := msg.unmarshal(raw); !ok {
-		err = errors.New("unable to parse ike message")
+		err = msgParseErr
 		return
 	}
 

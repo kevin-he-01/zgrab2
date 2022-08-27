@@ -615,6 +615,10 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 		// Read response
 		response, err = c.readMessage()
 		if err != nil {
+			if err == msgParseErr {
+				// response.raw
+				config.ConnLog.UnparsableRaw = response.raw
+			}
 			return
 		}
 		origin := guessResponseOrigin(response)
