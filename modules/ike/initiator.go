@@ -958,11 +958,20 @@ func buildProposalV1(proposalConfig Proposal) (p *proposalV1) {
 func (c *Conn) buildPayloadSecurityAssociationV2(config *InitiatorConfig, esp bool) (p *payloadSecurityAssociationV2) {
 	p = new(payloadSecurityAssociationV2)
 	proposals := config.Proposals
+	var espSpi []byte
 	if esp {
 		proposals = config.ESPProposals
+		espSpi = make([]byte, 4)
+		numRead, err := config.Rand.Read(espSpi)
+		if numRead != len(espSpi) {
+			panic("Unable to read enough bytes from random")
+		}
+		if err != nil {
+			panic(err)
+		}
 	}
 	for _, proposalConfig := range proposals {
-		p.proposals = append(p.proposals, buildProposalV2(proposalConfig, esp))
+		p.proposals = append(p.proposals, buildProposalV2(proposalConfig, espSpi))
 	}
 	if len(p.proposals) > 0 {
 		p.proposals[len(p.proposals)-1].lastProposal = true
@@ -970,17 +979,17 @@ func (c *Conn) buildPayloadSecurityAssociationV2(config *InitiatorConfig, esp bo
 	return p
 }
 
-func buildProposalV2(proposalConfig Proposal, esp bool) (p *proposalV2) {
+func buildProposalV2(proposalConfig Proposal, espSpi []byte) (p *proposalV2) {
 	p = new(proposalV2)
-	if esp {
+	if espSpi != nil {
 		p.protocolId = ESP_V2
 	} else {
 		p.protocolId = IKE_V2
 	}
 	p.proposalNum = proposalConfig.ProposalNum
 	p.lastProposal = false
-	if esp {
-		p.spi = []byte{0xde, 0xad, 0xbe, 0xef} // TODO: generate a random one
+	if espSpi != nil {
+		p.spi = espSpi
 	} else {
 		p.spi = []byte{}
 	}
