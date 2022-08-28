@@ -1,6 +1,7 @@
 package ike
 
 import (
+	"encoding/hex"
 	"fmt"
 	"sort"
 	"strconv"
@@ -46,6 +47,7 @@ type Flags struct {
 	NoFragment bool `long:"ike-no-fragment" description:"Turn off fragmentation support. Will not send a NOTIFY payload with IKEV2_FRAGMENTATION_SUPPORTED"`
 	BetterHashes bool `long:"better-hashes" description:"Add a NOTIFY payload proposing a list of supported signature hashes"`
 	RestrictDHGroup bool `long:"restrict-group" description:"Only propose the DH group specified by --ike-dh-group in EAP mode, to reduce round trips caused by INVALID_KE_PAYLOAD"`
+	CertReq string `long:"certreq" default:"" description:"Send the specified SHA-1 hash in the CERTREQ payload"`
 }
 
 type Scanner struct {
@@ -54,8 +56,24 @@ type Scanner struct {
 	idType uint8
 	idData []byte
 	groupNum uint16
+	certReq []byte
 	transforms []Transform
 	nonce []byte
+}
+
+func parseCertReq(hash string) (h []byte, err error) {
+	if len(hash) == 0 {
+		return
+	}
+	h, err = hex.DecodeString(hash)
+	if err != nil {
+		return
+	}
+	if len(h) != 20 { // Length of SHA-1 digest
+		err = fmt.Errorf("SHA-1 hash must be 20 bytes long, got %d bytes", len(h))
+		return
+	}
+	return
 }
 
 func RegisterModule() {
@@ -104,6 +122,10 @@ func (f *Flags) Validate(args []string) (err error) {
 		log.Fatal(nErr)
 		return zgrab2.ErrInvalidArguments
 	}
+	if _, err := parseCertReq(f.CertReq); err != nil {
+		log.Fatal(err)
+		return zgrab2.ErrInvalidArguments
+	}
 	if (f.Version != 1 && f.Version != 2) {
 		log.Fatalf("Bad IKE version %d", f.Version)
 		return zgrab2.ErrInvalidArguments
@@ -142,9 +164,14 @@ func (s *Scanner) Init(flags zgrab2.ScanFlags) error {
 	if err != nil {
 		panic(err)
 	}
+	certReq, err := parseCertReq(f.CertReq)
+	if err != nil {
+		panic(err)
+	}
 	s.groupNum = groupNum
 	s.transforms = transforms
 	s.nonce = nonce
+	s.certReq = certReq
 
 	s.config = f
 
@@ -232,6 +259,7 @@ func (s *Scanner) ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret.NoFragment = flags.NoFragment
 	ret.RestrictDHGroup = flags.RestrictDHGroup
 	ret.BetterHashes = flags.BetterHashes
+	ret.CertReq = s.certReq
 	return ret
 }
 

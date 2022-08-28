@@ -184,6 +184,7 @@ type InitiatorConfig struct {
 	// Used in EAP
 	RestrictDHGroup bool
 	BetterHashes bool
+	CertReq []byte
 
 	//// Misc connection states
 
@@ -802,6 +803,11 @@ func (c *Conn) buildInitiatorAuth(config *InitiatorConfig) (msg *ikeMessage) {
 	payload1 := c.buildPayload(config, IDENTIFICATION_INITIATOR_V2)
 	msg.payloads = append(msg.payloads, payload1)
 
+	if config.CertReq != nil {
+		crPayload := c.buildPayload(config, CERTIFICATE_REQUEST_V2)
+		msg.payloads = append(msg.payloads, crPayload)
+	}
+
 	payload2 := new(payload)
 	payload2.payloadType = SECURITY_ASSOCIATION_V2
 	payload2.body = c.buildPayloadSecurityAssociationV2(config, true)
@@ -848,6 +854,7 @@ func (c *Conn) buildPayload(config *InitiatorConfig, payloadType uint8) (p *payl
 	case IDENTIFICATION_RESPONDER_V2:
 	case CERTIFICATE_V2:
 	case CERTIFICATE_REQUEST_V2:
+		p.body = c.buildPayloadCertificateRequest(config)
 	case AUTHENTICATION_V2:
 	case NONCE_V2:
 		p.body = c.buildPayloadNonce(config)
@@ -1065,6 +1072,13 @@ func (c *Conn) buildPayloadIdentification(config *InitiatorConfig) (p *payloadId
 	p = new(payloadIdentification)
 	p.idType = config.IdentityType
 	p.idData = config.IdentityData
+	return
+}
+
+func (c *Conn) buildPayloadCertificateRequest(config *InitiatorConfig) (p *payloadCertificateRequest) {
+	p = new(payloadCertificateRequest)
+	p.encoding = X509_CERTIFICATE_SIGNATURE_V2
+	p.certificateAuth = config.CertReq
 	return
 }
 

@@ -1538,7 +1538,7 @@ func (p *payloadCertificateRequest) marshal() (x []byte) {
 		return p.raw
 	}
 	x = make([]byte, 1)
-	x[1] = p.encoding
+	x[0] = p.encoding
 	x = append(x, p.certificateAuth...)
 	return
 }
