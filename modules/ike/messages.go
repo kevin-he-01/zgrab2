@@ -341,7 +341,8 @@ func (p *ikeMessage) decrypt(firstPayload uint8, plaintextPayloads []byte) error
 	p.hdr.nextPayload = firstPayload
 	p.payloads = nil
 	if !p.unmarshalPayloads(plaintextPayloads) {
-		return fmt.Errorf("Unmarshaling payloads failed")
+		log.Debugf("Failed to unmarshal decrypted payload: %x", plaintextPayloads)
+		return fmt.Errorf("Unmarshaling payloads failed.")
 	}
 	// Invalidate caches
 	p.hdr.raw = nil
@@ -672,6 +673,7 @@ func (p *payload) marshal() (x []byte) {
 
 func (p *payload) unmarshal(data []byte) bool {
 	if len(data) < 4 {
+		log.Debugf("payload.unmarshal: data too short")
 		return false
 	}
 
@@ -680,10 +682,12 @@ func (p *payload) unmarshal(data []byte) bool {
 	p.length = uint16(data[2])<<8 | uint16(data[3])
 
 	if int(p.length) < IKE_PAYLOAD_HEADER_LEN {
+		log.Debugf("payload.unmarshal: int(p.length) = %d < IKE_PAYLOAD_HEADER_LEN", p.length)
 		return false
 	}
 
 	if len(data) < int(p.length) {
+		log.Debugf("payload.unmarshal: len(data) = %d < %d = int(p.length)", len(data), p.length)
 		return false
 	}
 
