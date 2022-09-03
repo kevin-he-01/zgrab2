@@ -1,9 +1,14 @@
 package ike
 
 import (
+	"encoding/asn1"
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"net"
+
+	"github.com/zmap/zcrypto/x509"
+	"github.com/zmap/zcrypto/x509/pkix"
 )
 
 type CryptoInfo struct {
@@ -305,9 +310,11 @@ func (p *payload) MakeLog() Payload {
 }
 
 type Certificate struct {
-	Name     string `json:"type,omitempty"`
-	Encoding uint8  `json:"encoding,omitempty"`
-	CertData []byte `json:"data,omitempty"`
+	Name       string            `json:"type,omitempty"`
+	Encoding   uint8             `json:"encoding,omitempty"`
+	CertData   []byte            `json:"data,omitempty"`
+	X509Parsed *x509.Certificate `json:"x509_parsed,omitempty"`
+	X509Error  string            `json:"error,omitempty"`
 }
 
 type CertificateRequest struct {
@@ -337,6 +344,13 @@ func (p *payloadCertificate) MakeLog() *Certificate {
 	cr.Name = "certificate"
 	cr.Encoding = p.encoding
 	cr.CertData = p.certificateData
+	if cr.Encoding == X509_CERTIFICATE_SIGNATURE_V2 {
+		if parsed, err := x509.ParseCertificate(cr.CertData); err == nil {
+			cr.X509Parsed = parsed
+		} else {
+			cr.X509Error = err.Error()
+		}
+	}
 
 	return cr
 }
@@ -512,10 +526,15 @@ func (p *payloadVendorId) MakeLog() *VendorId {
 }
 
 type Identification struct {
-	Name   string `json:"type,omitempty"`
-	Raw    []byte `json:"raw,omitempty"`
-	IdType uint8  `json:"id,omitempty"`
-	IdData []byte `json:"id_string,omitempty"`
+	Name       string     `json:"type,omitempty"`
+	Raw        []byte     `json:"raw,omitempty"`
+	IdType     uint8      `json:"id_type,omitempty"`
+	IdData     []byte     `json:"id_string,omitempty"`
+	Ip         string     `json:"ip,omitempty"`
+	DerName    *pkix.Name `json:"der_name,omitempty"`
+	DerDN      string     `json:"der_dn,omitempty"`
+	FQDN       string     `json:"fqdn,omitempty"`
+	RFC822Addr string     `json:"rfc822_addr,omitempty"`
 }
 
 func (p *payloadIdentification) MakeLog() *Identification {
@@ -524,6 +543,24 @@ func (p *payloadIdentification) MakeLog() *Identification {
 	id.IdType = p.idType
 	id.IdData = append(id.IdData, p.idData...)
 	id.Name = "identification"
+	switch id.IdType {
+	case ID_FQDN_V2:
+		id.FQDN = string(id.IdData)
+	case ID_RFC822_ADDR_V2:
+		id.RFC822Addr = string(id.IdData)
+	case ID_IPV4_ADDR_V2:
+		if len(id.IdData) == 4 {
+			id.Ip = net.IP(id.IdData).String()
+		}
+	case ID_DER_ASN1_DN_V2:
+		var rdnSeq pkix.RDNSequence
+		if _, err := asn1.Unmarshal(id.IdData, &rdnSeq); err != nil {
+			break
+		}
+		id.DerName = new(pkix.Name)
+		id.DerName.FillFromRDNSequence(&rdnSeq)
+		id.DerDN = id.DerName.String()
+	}
 	return id
 }
 
