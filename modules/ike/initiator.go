@@ -199,6 +199,7 @@ type InitiatorConfig struct {
 	// Crypto parameters (depends on responder selected proposal)
 	blockCipher         blockCipherCtor
 	prfFunc             hashCtor
+	xcbcPrf             bool // Whether AES-128-XCBC_PRF (RFC 4434) is used
 	prfKeyLength        int // Preferred key length of selected PRF
 	integFunc           hashCtor
 	integKeyLength      int // Key length for the selected integrity algorithm (0 for AUTH_NONE)

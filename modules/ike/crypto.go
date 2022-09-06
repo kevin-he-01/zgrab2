@@ -96,6 +96,18 @@ func (s *prfPlusStream) genBytes(nr int) []byte {
 	return data
 }
 
+// Append sum to b and return the result
+func (c *InitiatorConfig) prfSum(b []byte, key []byte, data []byte) []byte {
+	if c.xcbcPrf {
+		panic("not implemented yet")
+	} else {
+		prf := hmac.New(c.prfFunc, key)
+		prf.Write(data)
+		b = prf.Sum(b)
+	}
+	return b
+}
+
 func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) {
 	prfFunc := c.prfFunc
 	prfLength := c.prfKeyLength
@@ -109,12 +121,10 @@ func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) {
 	nr := c.responderNonce
 
 	var nonces []byte
-	nonces = append(nonces, ni...)
+	nonces = append(nonces, ni...) // TODO: truncate nonce if doing XCBC
 	nonces = append(nonces, nr...)
 
-	prf := hmac.New(prfFunc, nonces)
-	prf.Write(crypto.DHSharedSecret)
-	skeyseed := prf.Sum(nil)
+	skeyseed := c.prfSum(nil, nonces, crypto.DHSharedSecret)
 	crypto.SKEYSEED = skeyseed
 
 	nonces = append(nonces, spii...)
@@ -137,9 +147,7 @@ func (c *InitiatorConfig) getSignedOctets(idr *payloadIdentification) (signedOct
 	signedOctets = append(signedOctets, c.NonceData...)                   // NonceIData
 	restOfRespIDPayload := idr.marshal()
 	// MACedIDForR = prf(SK_pr, restOfRespIDPayload)
-	prf := hmac.New(c.prfFunc, c.ConnLog.Crypto.SK_pr)
-	prf.Write(restOfRespIDPayload)
-	signedOctets = prf.Sum(signedOctets)
+	signedOctets = c.prfSum(signedOctets, c.ConnLog.Crypto.SK_pr, restOfRespIDPayload)
 	return
 }
 
