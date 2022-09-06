@@ -7,6 +7,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
+	"errors"
 	"fmt"
 	"hash"
 )
@@ -45,13 +46,18 @@ var (
 )
 
 func getPrf(prfTransformId uint16) (ok bool, ctor hashCtor, size int) {
-	var desc hashDescriptor
-	desc, ok = prfMap[prfTransformId]
-	if !ok {
-		return
+	if prfTransformId == PRF_AES128_XCBC_V2 {
+		ok = true
+		size = 16 // 128-bit key is preferred
+	} else {
+		var desc hashDescriptor
+		desc, ok = prfMap[prfTransformId]
+		if !ok {
+			return
+		}
+		ctor = desc.ctor
+		size = desc.size
 	}
-	ctor = desc.ctor
-	size = desc.size
 	return
 }
 
@@ -72,15 +78,16 @@ type prfPlusStream struct {
 	curr int
 }
 
-func prfPlus(key []byte, data []byte, h hashCtor, length int) *prfPlusStream {
+func (c *InitiatorConfig) prfPlus(key []byte, data []byte, length int) *prfPlusStream {
 	var tPrev []byte
 	var buffer []byte
 	for i := 1; len(buffer) < length; i++ {
-		prf := hmac.New(h, key)
 		tPrev = append(tPrev, data...)
 		tPrev = append(tPrev, byte(i))
-		prf.Write(tPrev)
-		tPrev = prf.Sum(nil)
+		// prf := hmac.New(h, key)
+		// prf.Write(tPrev)
+		// tPrev = prf.Sum(nil)
+		tPrev = c.prfSum(nil, key, tPrev)
 		buffer = append(buffer, tPrev...)
 	}
 	return &prfPlusStream{
@@ -99,7 +106,7 @@ func (s *prfPlusStream) genBytes(nr int) []byte {
 // Append sum to b and return the result
 func (c *InitiatorConfig) prfSum(b []byte, key []byte, data []byte) []byte {
 	if c.xcbcPrf {
-		panic("not implemented yet")
+		b = aes128XCBCPrf(b, key, data)
 	} else {
 		prf := hmac.New(c.prfFunc, key)
 		prf.Write(data)
@@ -108,8 +115,7 @@ func (c *InitiatorConfig) prfSum(b []byte, key []byte, data []byte) []byte {
 	return b
 }
 
-func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) {
-	prfFunc := c.prfFunc
+func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) (err error) {
 	prfLength := c.prfKeyLength
 	integLength := c.integKeyLength
 	encLength := c.encKeyLength
@@ -121,16 +127,30 @@ func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) {
 	nr := c.responderNonce
 
 	var nonces []byte
-	nonces = append(nonces, ni...) // TODO: truncate nonce if doing XCBC
+	nonces = append(nonces, ni...)
 	nonces = append(nonces, nr...)
 
-	skeyseed := c.prfSum(nil, nonces, crypto.DHSharedSecret)
+	var prfNonces []byte
+
+	if c.xcbcPrf {
+		// See historical compat note in https://datatracker.ietf.org/doc/html/rfc7296#section-2.14
+		if len(nr) < 8 { // Try to be as lenient as possible, RFC require minimum of 16 bytes, here just used to avoid crashes
+			err = errors.New("Responder nonce is too short")
+			return
+		}
+		prfNonces = append(prfNonces, ni[:8]...)
+		prfNonces = append(prfNonces, nr[:8]...)
+	} else {
+		prfNonces = nonces
+	}
+
+	skeyseed := c.prfSum(nil, prfNonces, crypto.DHSharedSecret)
 	crypto.SKEYSEED = skeyseed
 
 	nonces = append(nonces, spii...)
 	nonces = append(nonces, spir...)
 
-	keyStream := prfPlus(skeyseed, nonces, prfFunc, prfLength + 2 * (integLength + encLength + prfLength))
+	keyStream := c.prfPlus(skeyseed, nonces, prfLength + 2 * (integLength + encLength + prfLength))
 	crypto.SK_d  = keyStream.genBytes(prfLength)
 	crypto.SK_ai = keyStream.genBytes(integLength)
 	crypto.SK_ar = keyStream.genBytes(integLength)
@@ -138,6 +158,8 @@ func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) {
 	crypto.SK_er = keyStream.genBytes(encLength)
 	crypto.SK_pi = keyStream.genBytes(prfLength)
 	crypto.SK_pr = keyStream.genBytes(prfLength)
+
+	return
 }
 
 // https://datatracker.ietf.org/doc/html/rfc7296#section-2.15

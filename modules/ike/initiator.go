@@ -698,7 +698,10 @@ func (c *Conn) initiatorHandshakeV2EAP(config *InitiatorConfig) (err error) {
 			if err != nil {
 				return
 			}
-			config.computeCryptoKeys(c)
+			err = config.computeCryptoKeys(c)
+			if err != nil {
+				return
+			}
 			config.saInitComplete = true
 
 			// Send IKE_AUTH
@@ -1359,6 +1362,13 @@ func (c *InitiatorConfig) MakeEAP() {
 			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_ECP_V2},
 			// {Type: DIFFIE_HELLMAN_GROUP_V2, Id: DH_256_BRAINPOOL_V2},
 		}
+		for prf := range prfMap {
+			transforms = append(transforms, Transform{Type: PSEUDORANDOM_FUNCTION_V2, Id: prf})
+		}
+		transforms = append(transforms, Transform{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_AES128_XCBC_V2})
+		for integ := range integAlgMap {
+			transforms = append(transforms, Transform{Type: INTEGRITY_ALGORITHM_V2, Id: integ})
+		}
 		if c.RestrictDHGroup {
 			// Only propose the initial group if c.RestrictDHGroup is on
 			transforms = append(transforms, Transform{Type: DIFFIE_HELLMAN_GROUP_V2, Id: c.DHGroup})
@@ -1366,12 +1376,6 @@ func (c *InitiatorConfig) MakeEAP() {
 			for _, group := range supportedGroupList {
 				transforms = append(transforms, Transform{Type: DIFFIE_HELLMAN_GROUP_V2, Id: group})
 			}
-		}
-		for prf := range prfMap {
-			transforms = append(transforms, Transform{Type: PSEUDORANDOM_FUNCTION_V2, Id: prf})
-		}
-		for integ := range integAlgMap {
-			transforms = append(transforms, Transform{Type: INTEGRITY_ALGORITHM_V2, Id: integ})
 		}
 		c.Proposals = []Proposal{
 			{ProposalNum: 1, Transforms: transforms},

@@ -324,6 +324,9 @@ func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {
 	if !ok {
 		return fmt.Errorf("Responder SA_INIT: Unsupported PRF type %d", prfTransform.transformId)
 	}
+	if prfTransform.transformId == PRF_AES128_XCBC_V2 {
+		config.xcbcPrf = true
+	}
 
 	// For integrity protection functions based on Hashed Message
 	// Authentication Code (HMAC), the fixed key size is the size of the
