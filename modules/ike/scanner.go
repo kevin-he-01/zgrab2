@@ -48,6 +48,7 @@ type Flags struct {
 	BetterHashes bool `long:"better-hashes" description:"Add a NOTIFY payload proposing a list of supported signature hashes"`
 	RestrictDHGroup bool `long:"restrict-group" description:"Only propose the DH group specified by --ike-dh-group in EAP mode, to reduce round trips caused by INVALID_KE_PAYLOAD"`
 	CertReq string `long:"certreq" default:"" description:"Send the specified SHA-1 hash in the CERTREQ payload"`
+	XCBC bool `long:"xcbc" description:"Enable support for AES-XCBC PRF"`
 }
 
 type Scanner struct {
@@ -257,6 +258,7 @@ func (s *Scanner) ConfigFromFlags(flags *Flags) *InitiatorConfig {
 	ret.ProbeFile = flags.ProbeFile
 	ret.NonceData = s.nonce
 	ret.NoFragment = flags.NoFragment
+	ret.EnableAESXCBCPrf = flags.XCBC
 	ret.RestrictDHGroup = flags.RestrictDHGroup
 	ret.BetterHashes = flags.BetterHashes
 	ret.CertReq = s.certReq

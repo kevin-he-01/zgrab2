@@ -186,6 +186,9 @@ type InitiatorConfig struct {
 	BetterHashes bool
 	CertReq []byte
 
+	// Extra cipher suite selection
+	EnableAESXCBCPrf bool
+
 	//// Misc connection states
 
 	// data received from the most recent N(COOKIE) payload.
@@ -1365,7 +1368,9 @@ func (c *InitiatorConfig) MakeEAP() {
 		for prf := range prfMap {
 			transforms = append(transforms, Transform{Type: PSEUDORANDOM_FUNCTION_V2, Id: prf})
 		}
-		transforms = append(transforms, Transform{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_AES128_XCBC_V2})
+		if c.EnableAESXCBCPrf {
+			transforms = append(transforms, Transform{Type: PSEUDORANDOM_FUNCTION_V2, Id: PRF_AES128_XCBC_V2})
+		}
 		for integ := range integAlgMap {
 			transforms = append(transforms, Transform{Type: INTEGRITY_ALGORITHM_V2, Id: integ})
 		}
