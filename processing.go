@@ -180,7 +180,11 @@ func grabTarget(input ScanTarget, m *Monitor) []byte {
 	if err != nil {
 		// Fix for https://github.com/zmap/zgrab2/issues/318
 		log.Errorf("grabTarget: %s (%s): unable to marshal data: %s", input.IP, input.Domain, err)
-		return nil
+		// A hack to avoid crashing downstream JSON processing scripts with a blank line
+		if (input.IP != nil) {
+			return []byte(fmt.Sprintf("{\"ip\": \"%s\"}", input.IP));
+		}
+		return []byte("{}");
 	}
 
 	return result
