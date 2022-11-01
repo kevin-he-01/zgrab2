@@ -178,7 +178,9 @@ func grabTarget(input ScanTarget, m *Monitor) []byte {
 	raw := BuildGrabFromInputResponse(&input, moduleResult)
 	result, err := EncodeGrab(raw, includeDebugOutput())
 	if err != nil {
-		log.Fatalf("unable to marshal data: %s", err)
+		// Fix for https://github.com/zmap/zgrab2/issues/318
+		log.Errorf("grabTarget: %s (%s): unable to marshal data: %s", input.IP, input.Domain, err)
+		return nil
 	}
 
 	return result
