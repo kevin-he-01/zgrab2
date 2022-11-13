@@ -10,6 +10,19 @@ zgrab2 ike --ike-version=1 --ike-mode-v1=main --ike-builtin=ALL --ike-auth=psk -
 # IKEv1 ALL RSA in Main mode
 zgrab2 ike --ike-version=1 --ike-mode-v1=main --ike-builtin=ALL --ike-auth=rsa_sig --ike-probe-file=udp-probe-v1-rsa.pkt <<< localhost
 
+# IKEv1 ALL RSA in aggressive mode with modp1024 group
+$ zgrab2 ike --ike-verbose --ike-version=1 --ike-mode-v1=aggressive --ike-builtin=ALL --ike-auth=rsa_sig --ike-all-groups=modp1024 --ike-probe-file=udp-probe-v1-rsa-aggr-modp1024.pkt <<< localhost
+INFO[0000] CONFIGURATION:                               
+INFO[0000] IKE Version: 1                               
+INFO[0000] IKEv1 mode: aggressive                       
+INFO[0000] Initial DH Group: 2                          
+INFO[0000] IKE identity: email:research-scan@sysnet.ucsd.edu 
+INFO[0000] IKE Built-in: ALL                            
+INFO[0000] IKE Nonce (hex): 000102030405060708090a0b0c0d0e0f10111213 
+INFO[0000] IKE Nonce length: 20 bytes                   
+INFO[0000] started grab at 2022-11-09T08:32:04-08:00    
+INFO[0000] Wrote probe file and exiting...
+
 ## Using the new, EAP supported zgrab2
 $ zgrab2 ike --ike-verbose --ike-probe-file=udp-probe-eap.pkt <<< localhost
 INFO[0000] CONFIGURATION:                               
