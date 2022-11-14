@@ -187,12 +187,12 @@ func (p *payload) MakeLog() Payload {
 			return pa.MakeLog()
 		}
 
-	//    case CERTIFICATE_V1:
-	//        if pa, ok := p.body.(*payloadCertificate); !ok {
-	//            return new(EmptyPayload)
-	//        } else {
-	//            return pa.MakeLog()
-	//        }
+	case CERTIFICATE_V1:
+		if pa, ok := p.body.(*payloadCertificate); !ok {
+			return new(EmptyPayload)
+		} else {
+			return pa.MakeLog()
+		}
 	case CERTIFICATE_REQUEST_V1:
 		if pa, ok := p.body.(*payloadCertificateRequest); !ok {
 			return new(EmptyPayload)
