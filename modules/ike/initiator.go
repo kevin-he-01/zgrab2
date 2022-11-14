@@ -184,6 +184,8 @@ type InitiatorConfig struct {
 	// Used in EAP
 	RestrictDHGroup bool
 	BetterHashes bool
+
+	// Certificate request
 	CertReq []byte
 
 	// Extra cipher suite selection
@@ -527,6 +529,11 @@ func (c *Conn) buildInitiatorAggressive(config *InitiatorConfig) (msg *ikeMessag
 	msg.hdr.length += uint32(payload4.length)
 	msg.payloads = append(msg.payloads, payload4)
 
+	if config.CertReq != nil {
+		crPayload := c.buildPayload(config, CERTIFICATE_REQUEST_V1)
+		msg.payloads = append(msg.payloads, crPayload)
+	}
+
 	return
 }
 
@@ -843,6 +850,7 @@ func (c *Conn) buildPayload(config *InitiatorConfig, payloadType uint8) (p *payl
 		p.body = c.buildPayloadIdentification(config)
 	case CERTIFICATE_V1:
 	case CERTIFICATE_REQUEST_V1:
+		p.body = c.buildPayloadCertificateRequestV1(config)
 	case HASH_V1:
 	case SIGNATURE_V1:
 	case NONCE_V1:
@@ -1086,6 +1094,13 @@ func (c *Conn) buildPayloadCertificateRequest(config *InitiatorConfig) (p *paylo
 	p = new(payloadCertificateRequest)
 	p.encoding = X509_CERTIFICATE_SIGNATURE_V2
 	p.certificateAuth = config.CertReq
+	return
+}
+
+func (c *Conn) buildPayloadCertificateRequestV1(config *InitiatorConfig) (p *payloadCertificateRequest) {
+	p = new(payloadCertificateRequest)
+	p.encoding = 0;
+	p.certificateAuth = nil
 	return
 }
 
