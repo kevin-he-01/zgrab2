@@ -3,6 +3,7 @@ package ike
 import (
 	"crypto/aes"
 	"crypto/des"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 
@@ -233,6 +234,33 @@ func (p *ikeMessage) getResponderIdPayload() *payloadIdentification {
 		}
 	}
 	return nil
+}
+
+func (p *ikeMessage) setCryptoParamsV1(config *InitiatorConfig) (err error) {
+	// ASSUME there is a KEX and SA payload
+	var proposals []*proposalV1
+	for _, payload := range p.payloads {
+		switch payload.payloadType {
+		case KEY_EXCHANGE_V1:
+			if pa, ok := payload.body.(*payloadKeyExchangeV1); ok {
+				config.responderKex = pa.keyExchangeData
+			}
+		case NONCE_V1:
+			if pa, ok := payload.body.(*payloadNonce); ok {
+				config.responderNonce = pa.nonceData
+			}
+		case SECURITY_ASSOCIATION_V1:
+			if pa, ok := payload.body.(*payloadSecurityAssociationV1); ok {
+				proposals = pa.proposals
+			}
+		}
+	}
+	if len(proposals) != 1 {
+		return errors.New("Responder SA_INIT (v1): Length of responder proposal must be 1")
+	}
+	// TODO: decipher proposals, check whether SHA vs. MD5 is used for hash/prf
+	config.prfFunc = sha1.New // Hardcode SHA-1 for now
+	return
 }
 
 func (p *ikeMessage) setCryptoParamsV2(config *InitiatorConfig) (err error) {

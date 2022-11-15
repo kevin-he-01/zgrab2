@@ -197,6 +197,10 @@ type InitiatorConfig struct {
 	// See https://datatracker.ietf.org/doc/html/rfc7296#section-2.6
 	cookie []byte
 
+	// Initiator SAi_b as used in IKEv1 aggressive mode
+	initiatorSAi   []byte
+	initiatorKex   []byte
+
 	// Responder nonce and key exchange
 	responderNonce []byte
 	responderKex   []byte
@@ -466,6 +470,11 @@ func (c *Conn) initiatorHandshakeAggressive(config *InitiatorConfig) (err error)
 		}
 		log := response.MakeLog()
 
+		if bytes.Equal(response.raw, config.ConnLog.InitiatorAggressive.Raw) {
+			err = ErrEchoServer
+			return
+		}
+
 		// Check if response contains an error notification and abort. Many implementations have invalid SPIs for this, so put it before the SPI check.
 		if err = response.containsErrorNotification(); err != nil {
 			config.ConnLog.ErrorNotification = response.MakeLog()
@@ -478,14 +487,22 @@ func (c *Conn) initiatorHandshakeAggressive(config *InitiatorConfig) (err error)
 			//err = errors.New("invalid initiator SPI")
 			continue
 		}
-		if !bytes.Equal(c.responderSPI[:], make([]byte, 8)) && !bytes.Equal(c.responderSPI[:], response.hdr.responderSPI[:]) {
-			config.ConnLog.Unexpected = append(config.ConnLog.Unexpected, log)
-			//err = errors.New("invalid responder SPI")
-			continue
-		}
+		copy(c.responderSPI[:], response.hdr.responderSPI[:])
 
 		if response.containsPayload(SECURITY_ASSOCIATION_V1) && response.containsPayload(KEY_EXCHANGE_V1) {
 			config.ConnLog.ResponderAggressive = log
+			if err = response.setCryptoParamsV1(config); err != nil {
+				return
+			}
+			if err = config.computeSharedSecret(config.responderKex); err != nil {
+				return
+			}
+			if err = config.computeCryptoKeysV1(c); err != nil {
+				return
+			}
+			signedData := config.getSignedOctetsV1(c, response)
+			config.ConnLog.Crypto.ResponderSignedOctets = signedData
+			config.ConnLog.Crypto.HASH_R = config.prfSum(nil, config.ConnLog.Crypto.SKEYSEED, signedData)
 			continue
 		}
 
@@ -514,10 +531,14 @@ func (c *Conn) buildInitiatorAggressive(config *InitiatorConfig) (msg *ikeMessag
 	msg.hdr.length += uint32(payload1.length)
 	msg.payloads = append(msg.payloads, payload1)
 
+	config.initiatorSAi = payload1.body.marshal()
+
 	payload2 := c.buildPayload(config, KEY_EXCHANGE_V1)
 	payload2.nextPayload = NONCE_V1
 	msg.hdr.length += uint32(payload2.length)
 	msg.payloads = append(msg.payloads, payload2)
+
+	config.initiatorKex = payload2.body.marshal()
 
 	payload3 := c.buildPayload(config, NONCE_V1)
 	payload3.nextPayload = IDENTIFICATION_V1
@@ -2007,6 +2028,7 @@ func (c *InitiatorConfig) SetConfig() error {
 
 	// V1 and V2 group numbers are the same for the groups that both version support.
 	configString := strings.ToUpper(c.BuiltIn)
+	c.ConnLog.Crypto = new(CryptoInfo)
 	switch configString {
 	case "": // do not use a built-in config
 		if len(c.Proposals) < 1 {
@@ -2023,7 +2045,6 @@ func (c *InitiatorConfig) SetConfig() error {
 		c.DHGroup = DH_1024_V1
 		c.MakeBASELINE()
 	case "EAP":
-		c.ConnLog.Crypto = new(CryptoInfo)
 		if !isGroupSupported(c.DHGroup) {
 			zlog.Fatalf("Unsupported Diffie Hellman group specified in --ike-dh-group")
 		}
@@ -2051,6 +2072,10 @@ func (c *InitiatorConfig) SetConfig() error {
 		c.MakePSK_OR_RSA()
 	// ALL transforms supporting some encryption schemes
 	case "ALL":
+		if !isGroupSupported(c.DHGroup) {
+			zlog.Fatalf("Unsupported Diffie Hellman group specified in --ike-dh-group")
+		}
+		c.setDHGroup(c.DHGroup)
 		c.MakeALL()
 	// check for subgroup order validation
 	// 1

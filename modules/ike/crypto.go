@@ -162,6 +162,22 @@ func (c *InitiatorConfig) computeCryptoKeys(conn *Conn) (err error) {
 	return
 }
 
+func (c *InitiatorConfig) computeCryptoKeysV1(conn *Conn) (err error) {
+	crypto := c.ConnLog.Crypto
+	// spii := conn.initiatorSPI[:] // SPI Referred to as CKY-I/R in the RFC
+	// spir := conn.responderSPI[:]
+	ni := c.NonceData
+	nr := c.responderNonce
+
+	var nonces []byte
+	nonces = append(nonces, ni...)
+	nonces = append(nonces, nr...)
+
+	crypto.SKEYSEED = c.prfSum(nil, nonces, crypto.DHSharedSecret)
+
+	return
+}
+
 // https://datatracker.ietf.org/doc/html/rfc7296#section-2.15
 func (c *InitiatorConfig) getSignedOctets(idr *payloadIdentification) (signedOctets []byte) {
 	// ResponderSignedOctets = RealMessage2 | NonceIData | MACedIDForR
@@ -170,6 +186,40 @@ func (c *InitiatorConfig) getSignedOctets(idr *payloadIdentification) (signedOct
 	restOfRespIDPayload := idr.marshal()
 	// MACedIDForR = prf(SK_pr, restOfRespIDPayload)
 	signedOctets = c.prfSum(signedOctets, c.ConnLog.Crypto.SK_pr, restOfRespIDPayload)
+	return
+}
+
+// HASH_R = prf(SKEYID, g^xr | g^xi | CKY-R | CKY-I | SAi_b | IDir_b )
+func (c *InitiatorConfig) getSignedOctetsV1(conn *Conn, m *ikeMessage) (signedOctets []byte) {
+	var idPayload *payloadIdentification;
+	// var saPayload *payloadSecurityAssociationV1;
+	// var kexResponder *payloadKeyExchangeV1;
+	for _, payload := range m.payloads {
+		switch payload.payloadType {
+		case IDENTIFICATION_V1:
+			if pa, ok := payload.body.(*payloadIdentification); ok {
+				idPayload = pa
+			}
+		// case SECURITY_ASSOCIATION_V1:
+		// 	if pa, ok := payload.body.(*payloadSecurityAssociationV1); ok {
+		// 		saPayload = pa
+		// 	}
+		// case KEY_EXCHANGE_V1:
+		// 	if pa, ok := payload.body.(*payloadKeyExchangeV1); ok {
+		// 		kexResponder = pa
+		// 	}
+		}
+	}
+	if idPayload == nil {
+		// No ID payload (could be that we are not in RSA mode)
+		return nil
+	}
+	signedOctets = append(signedOctets, c.responderKex...)
+	signedOctets = append(signedOctets, c.initiatorKex...)
+	signedOctets = append(signedOctets, conn.responderSPI[:]...)
+	signedOctets = append(signedOctets, conn.initiatorSPI[:]...)
+	signedOctets = append(signedOctets, c.initiatorSAi...)
+	signedOctets = append(signedOctets, idPayload.marshal()...)
 	return
 }
 

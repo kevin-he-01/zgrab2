@@ -14,6 +14,7 @@ import (
 type CryptoInfo struct {
 	DHExponential         *big.Int `json:"dh_exponent,omitempty"`
 	DHSharedSecret        []byte   `json:"dh_shared_secret,omitempty"`
+	// Called SKEYSEED in IKEv2, SKEYID in IKEv1
 	SKEYSEED              []byte   `json:"skeyseed,omitempty"`
 	SK_d                  []byte   `json:"sk_d,omitempty"`
 	SK_ai                 []byte   `json:"sk_ai,omitempty"`
@@ -22,7 +23,10 @@ type CryptoInfo struct {
 	SK_er                 []byte   `json:"sk_er,omitempty"`
 	SK_pi                 []byte   `json:"sk_pi,omitempty"`
 	SK_pr                 []byte   `json:"sk_pr,omitempty"`
+	// Contents hashed into HASH_R for IKEv1, signed octets in IKEv2
 	ResponderSignedOctets []byte   `json:"signed_octets,omitempty"`
+	// Only in IKEv1
+	HASH_R 			      []byte   `json:"hash_r,omitempty"`
 }
 
 type HandshakeLog struct {
