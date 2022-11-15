@@ -3,7 +3,10 @@ package ike
 import (
 	"crypto/aes"
 	"crypto/des"
+	"crypto/md5"
 	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"errors"
 	"fmt"
 
@@ -236,10 +239,10 @@ func (p *ikeMessage) getResponderIdPayload() *payloadIdentification {
 	return nil
 }
 
-func (p *ikeMessage) setCryptoParamsV1(config *InitiatorConfig) (err error) {
+func (response *ikeMessage) setCryptoParamsV1(config *InitiatorConfig) (err error) {
 	// ASSUME there is a KEX and SA payload
 	var proposals []*proposalV1
-	for _, payload := range p.payloads {
+	for _, payload := range response.payloads {
 		switch payload.payloadType {
 		case KEY_EXCHANGE_V1:
 			if pa, ok := payload.body.(*payloadKeyExchangeV1); ok {
@@ -256,10 +259,37 @@ func (p *ikeMessage) setCryptoParamsV1(config *InitiatorConfig) (err error) {
 		}
 	}
 	if len(proposals) != 1 {
-		return errors.New("Responder SA_INIT (v1): Length of responder proposal must be 1")
+		return errors.New("Responder SA_INIT (v1): Number of responder proposals must be 1")
 	}
-	// TODO: decipher proposals, check whether SHA vs. MD5 is used for hash/prf
-	config.prfFunc = sha1.New // Hardcode SHA-1 for now
+	if len(proposals[0].transforms) != 1 {
+		return errors.New("Responder SA_INIT (v1): Number of responder transforms must be 1")
+	}
+	theTransform := proposals[0].transforms[0]
+	for _, attribute := range theTransform.attributes {
+		if attribute.attributeType == HASH_ALGORITHM_V1 {
+			if len(attribute.attributeValue) != 2 {
+				return errors.New("Responder SA_INIT (v1): Hash function uint16 must be of length 2")
+			}
+			hashFuncNum := uint16FromBytes(attribute.attributeValue)
+			switch hashFuncNum {
+			case MD5_V1:
+				config.prfFunc = md5.New
+			case SHA_V1:
+				config.prfFunc = sha1.New
+			case SHA2_256_V1:
+				config.prfFunc = sha256.New
+			case SHA2_384_V1:
+				config.prfFunc = sha512.New384
+			case SHA2_512_V1:
+				config.prfFunc = sha512.New
+			default:
+				return fmt.Errorf("Unknown hash function %d", hashFuncNum)
+			}
+		}
+	}
+	if config.prfFunc == nil {
+		return errors.New("No hash function attribute")
+	}
 	return
 }
 
