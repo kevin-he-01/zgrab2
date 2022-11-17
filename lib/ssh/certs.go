@@ -16,6 +16,8 @@ import (
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // These constants from [PROTOCOL.certkeys] represent the algorithm names
@@ -105,6 +107,19 @@ type JsonCertificate struct {
 	CriticalOptions *JsonCriticalOptions `json:"critical_options,omitempty"`
 }
 
+func timeFromEpoch(unix int64) time.Time {
+	// Workaround for the Y10K JSON serialization bug
+	t := time.Unix(unix, 0).UTC()
+	if t.Year() < 0 {
+		logrus.Warnf("timeFromEpoch: %s is too small to be safe for serialization", t)
+		return time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC)
+	} else if t.Year() > 9999 {
+		logrus.Warnf("timeFromEpoch: %s is too big to be safe for serialization", t)
+		return time.Date(9999, 12, 31, 23, 59, 59, 0, time.UTC)
+	}
+	return t
+}
+
 func (c *Certificate) MarshalJSON() ([]byte, error) {
 	temp := JsonCertificate{
 		Nonce:           c.Nonce,
@@ -152,8 +167,8 @@ func (c *Certificate) MarshalJSON() ([]byte, error) {
 	}
 
 	temp.Validity = &JsonValidity{
-		ValidAfter:  time.Unix(int64(c.ValidAfter), 0).UTC(),
-		ValidBefore: time.Unix(int64(c.ValidBefore), 0).UTC(),
+		ValidAfter:  timeFromEpoch(int64(c.ValidAfter)),
+		ValidBefore: timeFromEpoch(int64(c.ValidBefore)),
 		Length:      validityLength,
 	}
 
